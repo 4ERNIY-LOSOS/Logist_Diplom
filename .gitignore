@@ -1,0 +1,62 @@
+# General
+.DS_Store
+Thumbs.db
+
+# Build artifacts
+**/dist/
+**/build/
+**/target/
+**/out/
+**/output/
+**/coverage/
+**/.nyc_output/
+**/gen/schemas/ # Specific to Tauri generated schemas
+
+# Dependency directories
+**/node_modules/
+**/vendor/
+
+# Temporary files and caches
+**/tmp/
+**/temp/
+**/log/
+**/logs/
+**/.cache/
+**/.toolstmp/
+*.log
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
+lerna-debug.log*
+*.bak
+*.swp
+*.swo
+*~
+*.orig
+*.seed
+*.patch
+*.sublime-*
+*.sass-cache/
+.eslintcache
+.jest-cache/
+
+# Environment variables
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+.env*.local
+
+# IDE and OS specific files
+.vscode/
+.idea/
+*.iml
+*.iws
+*.ipr
+.project
+.settings/
+.classpath
+
+# Docker specific
+.dockerignore
