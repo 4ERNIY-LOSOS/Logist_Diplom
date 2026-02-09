@@ -4,6 +4,7 @@ import * as bcrypt from 'bcrypt';
 import { UserService } from '../user/user.service';
 import { CreateUserDto } from '../user/dto/create-user.dto';
 import { User } from '../user/entities/user.entity';
+import { RoleName } from './enums/role-name.enum'; // Import RoleName
 
 @Injectable()
 export class AuthService {
@@ -34,6 +35,9 @@ export class AuthService {
   }
 
   async register(createUserDto: CreateUserDto): Promise<User> {
+    // Force the role to CLIENT for all self-registrations to prevent privilege escalation.
+    createUserDto.role = RoleName.CLIENT;
+
     // Delegate creation to UserService, which handles hashing and relations
     return this.userService.create(createUserDto);
   }

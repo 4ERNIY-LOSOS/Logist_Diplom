@@ -1,9 +1,19 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
-import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger'; // Добавили импорт
+import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
+import { ValidationPipe } from '@nestjs/common'; // Import ValidationPipe
 
 async function bootstrap() {
+  process.env.TZ = 'UTC'; // Set timezone for the Node.js process
   const app = await NestFactory.create(AppModule);
+
+  app.useGlobalPipes(
+    new ValidationPipe({
+      transform: true, // Enable transformation of incoming payload objects to DTO instances
+      whitelist: true, // Automatically remove properties that are not defined in the DTO
+      forbidNonWhitelisted: true, // Throw an error if non-whitelisted properties are present
+    }),
+  );
 
   // Настройка Swagger
   const config = new DocumentBuilder()
@@ -11,7 +21,8 @@ async function bootstrap() {
     .setDescription('The API for managing logistics services')
     .setVersion('1.0')
     .addTag('requests') // Пример тега
-    .addBearerAuth( // Add this line for JWT authentication
+    .addBearerAuth(
+      // Add this line for JWT authentication
       {
         type: 'http',
         scheme: 'bearer',

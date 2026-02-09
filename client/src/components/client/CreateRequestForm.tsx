@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import api from '../../api/api';
 import {
   Box,
   Button,
@@ -12,6 +11,8 @@ import {
 } from '@mui/material';
 import AddCircleIcon from '@mui/icons-material/AddCircle';
 import DeleteIcon from '@mui/icons-material/Delete';
+import AttachFileIcon from '@mui/icons-material/AttachFile';
+import api from '../../api/api';
 
 // Interfaces remain the same for now
 interface CargoItem {
@@ -35,13 +36,16 @@ interface CreateRequestFormProps {
 }
 
 const CreateRequestForm: React.FC<CreateRequestFormProps> = ({ onSuccess }) => {
-    // ... (state and handlers remain the same)
     const [pickupDate, setPickupDate] = useState('');
     const [deliveryDate, setDeliveryDate] = useState('');
     const [pickupAddress, setPickupAddress] = useState<Address>({ country: '', city: '', street: '', houseNumber: '', postalCode: '' });
     const [deliveryAddress, setDeliveryAddress] = useState<Address>({ country: '', city: '', street: '', houseNumber: '', postalCode: '' });
     const [cargos, setCargos] = useState<CargoItem[]>([{ name: '', weight: 0, volume: 0, type: 'General' }]);
     const [notes, setNotes] = useState('');
+    const [distanceKm, setDistanceKm] = useState<number | ''>(''); // New state for distance
+    const [selectedFile, setSelectedFile] = useState<File | null>(null); // New state for file upload
+    const [preliminaryCost, setPreliminaryCost] = useState<number | null>(null); // To display after submission
+
     const [message, setMessage] = useState<string | null>(null);
     const [error, setError] = useState<string | null>(null);
   
@@ -62,6 +66,14 @@ const CreateRequestForm: React.FC<CreateRequestFormProps> = ({ onSuccess }) => {
       const setter = type === 'pickup' ? setPickupAddress : setDeliveryAddress;
       setter(prev => ({ ...prev, [field]: value }));
     };
+
+    const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+        if (event.target.files && event.target.files.length > 0) {
+            setSelectedFile(event.target.files[0]);
+        } else {
+            setSelectedFile(null);
+        }
+    };
     
     const resetForm = () => {
       setPickupDate('');
@@ -70,15 +82,47 @@ const CreateRequestForm: React.FC<CreateRequestFormProps> = ({ onSuccess }) => {
       setDeliveryAddress({ country: '', city: '', street: '', houseNumber: '', postalCode: '' });
       setCargos([{ name: '', weight: 0, volume: 0, type: 'General' }]);
       setNotes('');
+      setDistanceKm('');
+      setSelectedFile(null);
+      setPreliminaryCost(null);
     };
   
     const handleSubmit = async (e: React.FormEvent) => {
       e.preventDefault();
       setMessage(null);
       setError(null);
+      setPreliminaryCost(null); // Clear previous cost
+
       try {
-        await api.post('/request', { pickupDate, deliveryDate, pickupAddress, deliveryAddress, cargos, notes });
+        const requestData = {
+            pickupDate,
+            deliveryDate,
+            pickupAddress,
+            deliveryAddress,
+            cargos,
+            notes,
+            distanceKm: distanceKm === '' ? undefined : Number(distanceKm), // Only send if not empty
+        };
+
+        const response = await api.post('/request', requestData); // Send request data first
         setMessage('Заявка успешно создана!');
+        setPreliminaryCost(response.data.preliminaryCost); // Assuming backend returns cost
+
+        // If a file is selected, upload it separately after request is created
+        if (selectedFile) {
+            const formData = new FormData();
+            formData.append('file', selectedFile);
+            formData.append('requestId', response.data.id); // Associate with the newly created request
+            // Add other document details if necessary, e.g., formData.append('type', 'BILL_OF_LADING');
+            
+            await api.post('/document/upload', formData, {
+                headers: {
+                    'Content-Type': 'multipart/form-data',
+                },
+            });
+            setMessage(prev => (prev ? prev + ' Файл успешно загружен!' : 'Файл успешно загружен!'));
+        }
+
         resetForm();
         onSuccess(); // Call the success handler
       } catch (err: any) {
@@ -104,7 +148,7 @@ const CreateRequestForm: React.FC<CreateRequestFormProps> = ({ onSuccess }) => {
   return (
     <Box component={Paper} sx={{ p: 4, my: 2 }}>
       <Typography variant="h5" gutterBottom>Создание новой заявки</Typography>
-      {message && <Alert severity="success" sx={{ mb: 2 }}>{message}</Alert>}
+      {message && <Alert severity="success" sx={{ mb: 2 }}>{message} {preliminaryCost !== null && `Предварительная стоимость: ${preliminaryCost} ₽`}</Alert>}
       {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
       <Box component="form" onSubmit={handleSubmit} sx={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
         
@@ -150,6 +194,32 @@ const CreateRequestForm: React.FC<CreateRequestFormProps> = ({ onSuccess }) => {
             </Paper>
           ))}
           <Button startIcon={<AddCircleIcon />} onClick={addCargo}>Добавить груз</Button>
+        </Box>
+
+        <Box>
+            <Typography variant="h6">Расстояние и Документы</Typography>
+            <TextField
+                fullWidth
+                type="number"
+                label="Расстояние (км) для расчета стоимости"
+                value={distanceKm}
+                onChange={e => setDistanceKm(e.target.value === '' ? '' : Number(e.target.value))}
+                margin="normal"
+            />
+            <Button
+                variant="contained"
+                component="label"
+                startIcon={<AttachFileIcon />}
+                sx={{ mt: 2 }}
+            >
+                {selectedFile ? selectedFile.name : 'Прикрепить документ'}
+                <input type="file" hidden onChange={handleFileChange} />
+            </Button>
+            {selectedFile && (
+                <Typography variant="body2" color="textSecondary" sx={{ mt: 1 }}>
+                    Выбран файл: {selectedFile.name}
+                </Typography>
+            )}
         </Box>
 
         <Box>

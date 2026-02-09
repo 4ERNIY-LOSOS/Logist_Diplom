@@ -40,13 +40,16 @@ export class User {
   @JoinColumn({ name: 'role_id' })
   role: Role;
 
-  @ManyToOne(() => Company, (company) => company.users, { nullable: true })
+  @ManyToOne(() => Company, (company) => company.users, {
+    nullable: true,
+    onDelete: 'SET NULL',
+  })
   @JoinColumn({ name: 'company_id' })
   company: Company;
 
-  @CreateDateColumn({ name: 'created_at' })
+  @CreateDateColumn({ type: 'timestamptz', name: 'created_at' })
   createdAt: Date;
 
-  @UpdateDateColumn({ name: 'updated_at' })
+  @UpdateDateColumn({ type: 'timestamptz', name: 'updated_at' })
   updatedAt: Date;
 }

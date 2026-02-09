@@ -52,10 +52,10 @@ export class Request {
   @OneToOne(() => Shipment, (shipment) => shipment.request)
   shipment: Shipment;
 
-  @Column({ name: 'pickup_date' })
+  @Column({ type: 'timestamptz', name: 'pickup_date' })
   pickupDate: Date;
 
-  @Column({ name: 'delivery_date' })
+  @Column({ type: 'timestamptz', name: 'delivery_date' })
   deliveryDate: Date;
 
   @Column('decimal', {
@@ -77,9 +77,9 @@ export class Request {
   @Column({ nullable: true })
   notes: string;
 
-  @CreateDateColumn({ name: 'created_at' })
+  @CreateDateColumn({ type: 'timestamptz', name: 'created_at' })
   createdAt: Date;
 
-  @UpdateDateColumn({ name: 'updated_at' })
+  @UpdateDateColumn({ type: 'timestamptz', name: 'updated_at' })
   updatedAt: Date;
 }

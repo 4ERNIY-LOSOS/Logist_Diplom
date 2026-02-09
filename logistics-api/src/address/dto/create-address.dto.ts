@@ -1,4 +1,10 @@
-import { IsString, IsNotEmpty, IsOptional, IsLatitude, IsLongitude } from 'class-validator';
+import {
+  IsString,
+  IsNotEmpty,
+  IsOptional,
+  IsLatitude,
+  IsLongitude,
+} from 'class-validator';
 
 export class CreateAddressDto {
   @IsString()

@@ -1,4 +1,3 @@
-
 import {
   Column,
   CreateDateColumn,
@@ -20,15 +19,31 @@ export class LtlShipment {
   @OneToMany(() => Shipment, (shipment) => shipment.ltlShipment)
   shipments: Shipment[];
 
-  @Column({ name: 'departure_date' })
+  @Column({ type: 'timestamptz', name: 'departure_date' })
   departureDate: Date;
 
-  @Column({ name: 'arrival_date' })
+  @Column({ type: 'timestamptz', name: 'arrival_date' })
   arrivalDate: Date;
 
-  @CreateDateColumn({ name: 'created_at' })
+  @Column('decimal', {
+    name: 'consolidated_weight',
+    precision: 12,
+    scale: 2,
+    default: 0,
+  })
+  consolidatedWeight: number;
+
+  @Column('decimal', {
+    name: 'consolidated_volume',
+    precision: 12,
+    scale: 2,
+    default: 0,
+  })
+  consolidatedVolume: number;
+
+  @CreateDateColumn({ type: 'timestamptz', name: 'created_at' })
   createdAt: Date;
 
-  @UpdateDateColumn({ name: 'updated_at' })
+  @UpdateDateColumn({ type: 'timestamptz', name: 'updated_at' })
   updatedAt: Date;
 }

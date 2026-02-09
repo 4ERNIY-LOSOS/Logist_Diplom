@@ -11,9 +11,8 @@ import RegisterPage from './components/RegisterPage';
 import { ThemeProvider } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 import theme from './theme';
-
-// Placeholder components for different dashboards
-const AdminDashboard: React.FC = () => <div>Admin Dashboard Content</div>;
+import { AdminDashboard } from './components/admin/AdminDashboard'; // Import the new AdminDashboard
+import ReportsPage from './components/ReportsPage'; // Import ReportsPage
 
 // ProtectedRoute component
 interface ProtectedRouteProps {
@@ -52,8 +51,8 @@ function App() {
           >
             {/* Nested routes for different roles */}
             <Route index element={<Home />} />
-            <Route path="admin/users" element={<AdminDashboard />} />
-            <Route path="admin/companies" element={<AdminDashboard />} />
+            <Route path="admin" element={<AdminDashboard />} /> {/* New admin route */}
+            <Route path="reports" element={<ReportsPage />} /> {/* New reports route */}
             <Route path="logistician/dashboard" element={<LogisticianDashboard />} />
             <Route
               path="logistician/process-request/:requestId"

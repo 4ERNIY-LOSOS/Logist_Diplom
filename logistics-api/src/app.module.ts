@@ -22,18 +22,20 @@ import { AuditLogModule } from './audit-log/audit-log.module';
 
 @Module({
   imports: [
-    ConfigModule.forRoot({ // Add this line
+    ConfigModule.forRoot({
+      // Add this line
       isGlobal: true, // Makes ConfigModule available everywhere
     }),
-    TypeOrmModule.forRoot({ // Настройка подключения к БД
+    TypeOrmModule.forRoot({
+      // Настройка подключения к БД
       type: 'postgres',
-      host: 'localhost',    // Хост, где запущен Docker-контейнер с PostgreSQL
-      port: 5432,           // Порт PostgreSQL
-      username: 'admin',    // Имя пользователя из docker-compose.yml
-      password: 'admin',    // Пароль из docker-compose.yml
+      host: 'localhost', // Хост, где запущен Docker-контейнер с PostgreSQL
+      port: 5432, // Порт PostgreSQL
+      username: 'admin', // Имя пользователя из docker-compose.yml
+      password: 'admin', // Пароль из docker-compose.yml
       database: 'logistics_db', // Имя БД из docker-compose.yml
       autoLoadEntities: true, // Автоматическая загрузка сущностей (entities)
-      synchronize: false,      // Синхронизация схемы БД. ВНИМАНИЕ: Использовать только на dev-окружении!
+      synchronize: false, // Синхронизация схемы БД. ВНИМАНИЕ: Использовать только на dev-окружении!
     }),
     RequestModule,
     UserModule,

@@ -1,46 +1,56 @@
-
 import {
+  Entity,
+  PrimaryGeneratedColumn,
   Column,
   CreateDateColumn,
-  Entity,
-  JoinColumn,
   ManyToOne,
-  PrimaryGeneratedColumn,
+  JoinColumn,
 } from 'typeorm';
-import { DocumentType } from './document-type.entity';
+import { Request } from '../../request/entities/request.entity';
 import { Shipment } from '../../shipment/entities/shipment.entity';
-import { User } from '../../user/entities/user.entity';
+
+export enum DocumentType {
+  BILL_OF_LADING = 'BILL_OF_LADING',
+  PACKING_LIST = 'PACKING_LIST',
+  INVOICE = 'INVOICE',
+  PROOF_OF_DELIVERY = 'PROOF_OF_DELIVERY',
+  OTHER = 'OTHER',
+}
 
 @Entity('documents')
 export class Document {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @ManyToOne(() => DocumentType, (type) => type.documents)
-  @JoinColumn({ name: 'type_id' })
-  type: DocumentType;
-
-  // A document can belong to a shipment
-  @ManyToOne(() => Shipment, (shipment) => shipment.documents, {
-    nullable: true,
-  })
-  @JoinColumn({ name: 'shipment_id' })
-  shipment: Shipment;
-
-  // The user who uploaded the document
-  @ManyToOne(() => User)
-  @JoinColumn({ name: 'uploaded_by_user_id' })
-  uploadedByUser: User;
-
   @Column({ name: 'file_name' })
   fileName: string;
 
-  @Column({ name: 'file_path' })
-  filePath: string; // Path in a file storage like S3 or local disk
+  @Column({ name: 'original_name' })
+  originalName: string;
 
   @Column({ name: 'mime_type' })
   mimeType: string;
 
-  @CreateDateColumn({ name: 'created_at' })
-  createdAt: Date;
+  @Column()
+  size: number;
+
+  @Column({
+    type: 'enum',
+    enum: DocumentType,
+    default: DocumentType.OTHER,
+  })
+  type: DocumentType;
+
+  @CreateDateColumn({ type: 'timestamptz', name: 'uploaded_at' })
+  uploadedAt: Date;
+
+  @ManyToOne(() => Shipment, (shipment) => shipment.documents, {
+    nullable: false,
+    onDelete: 'CASCADE',
+  })
+  @JoinColumn({ name: 'shipment_id' })
+  shipment: Shipment;
+
+  @Column({ name: 'shipment_id' })
+  shipmentId: string;
 }

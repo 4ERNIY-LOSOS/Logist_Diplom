@@ -1,4 +1,3 @@
-
 import {
   Column,
   CreateDateColumn,
@@ -32,9 +31,9 @@ export class Company {
   @OneToMany(() => User, (user) => user.company)
   users: User[];
 
-  @CreateDateColumn({ name: 'created_at' })
+  @CreateDateColumn({ type: 'timestamptz', name: 'created_at' })
   createdAt: Date;
 
-  @UpdateDateColumn({ name: 'updated_at' })
+  @UpdateDateColumn({ type: 'timestamptz', name: 'updated_at' })
   updatedAt: Date;
 }

@@ -1,4 +1,3 @@
-
 import { Column, Entity, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
 import { Shipment } from './shipment.entity';
 

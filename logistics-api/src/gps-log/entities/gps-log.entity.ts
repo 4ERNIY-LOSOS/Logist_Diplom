@@ -1,4 +1,3 @@
-
 import {
   Column,
   CreateDateColumn,
@@ -24,6 +23,6 @@ export class GpsLog {
   @Column('decimal', { precision: 11, scale: 8 })
   longitude: number;
 
-  @CreateDateColumn({ name: 'timestamp' })
+  @Column({ type: 'timestamptz', name: 'timestamp' })
   timestamp: Date;
 }

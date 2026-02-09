@@ -2,6 +2,7 @@ import {
   Injectable,
   NotFoundException,
   BadRequestException,
+  ForbiddenException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -11,6 +12,7 @@ import { UpdateUserDto } from './dto/update-user.dto';
 import { User } from './entities/user.entity';
 import { Role } from '../role/entities/role.entity';
 import { Company } from '../company/entities/company.entity';
+import { Request } from '../request/entities/request.entity';
 
 @Injectable()
 export class UserService {
@@ -21,10 +23,18 @@ export class UserService {
     private roleRepository: Repository<Role>,
     @InjectRepository(Company)
     private companyRepository: Repository<Company>,
+    @InjectRepository(Request) // Inject RequestRepository
+    private requestRepository: Repository<Request>,
   ) {}
 
   async create(createUserDto: CreateUserDto): Promise<User> {
-    const { username, email, password, role: roleName, companyId } = createUserDto;
+    const {
+      username,
+      email,
+      password,
+      role: roleName,
+      companyId,
+    } = createUserDto;
 
     const existingUser = await this.userRepository.findOne({
       where: [{ username }, { email }],
@@ -33,14 +43,18 @@ export class UserService {
       throw new BadRequestException('Username or email already exists');
     }
 
-    const role = await this.roleRepository.findOne({ where: { name: roleName } });
+    const role = await this.roleRepository.findOne({
+      where: { name: roleName },
+    });
     if (!role) {
       throw new NotFoundException(`Role with name "${roleName}" not found`);
     }
 
     let company: Company | null = null;
     if (companyId) {
-      company = await this.companyRepository.findOne({ where: { id: companyId } });
+      company = await this.companyRepository.findOne({
+        where: { id: companyId },
+      });
       if (!company) {
         throw new NotFoundException(`Company with ID "${companyId}" not found`);
       }
@@ -80,12 +94,27 @@ export class UserService {
     });
   }
 
+  async findMe(userId: string): Promise<User> {
+    return this.findOne(userId);
+  }
+
+  async updateMe(userId: string, updateUserDto: UpdateUserDto): Promise<User> {
+    if (updateUserDto.role || updateUserDto.companyId) {
+      throw new ForbiddenException(
+        'You are not allowed to change your role or company.',
+      );
+    }
+    return this.update(userId, updateUserDto);
+  }
+
   async update(id: string, updateUserDto: UpdateUserDto): Promise<User> {
     const user = await this.findOne(id);
     const { role: roleName, companyId, password, ...rest } = updateUserDto;
 
     if (roleName) {
-      const role = await this.roleRepository.findOne({ where: { name: roleName } });
+      const role = await this.roleRepository.findOne({
+        where: { name: roleName },
+      });
       if (!role) {
         throw new NotFoundException(`Role with name "${roleName}" not found`);
       }
@@ -93,7 +122,9 @@ export class UserService {
     }
 
     if (companyId) {
-      const company = await this.companyRepository.findOne({ where: { id: companyId } });
+      const company = await this.companyRepository.findOne({
+        where: { id: companyId },
+      });
       if (!company) {
         throw new NotFoundException(`Company with ID "${companyId}" not found`);
       }
@@ -109,9 +140,19 @@ export class UserService {
   }
 
   async remove(id: string): Promise<void> {
-    const result = await this.userRepository.delete(id);
-    if (result.affected === 0) {
-      throw new NotFoundException(`User with ID "${id}" not found`);
+    const user = await this.findOne(id); // Use findOne to ensure the user exists and to get the entity
+
+    // Check if the user is associated with any requests
+    const associatedRequestsCount = await this.requestRepository.count({
+      where: { createdByUser: { id: user.id } },
+    });
+
+    if (associatedRequestsCount > 0) {
+      throw new BadRequestException(
+        `Cannot delete user with ID "${id}" because they are associated with ${associatedRequestsCount} request(s).`,
+      );
     }
+
+    await this.userRepository.remove(user);
   }
 }

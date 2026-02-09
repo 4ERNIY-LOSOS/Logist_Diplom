@@ -30,11 +30,13 @@ export class RequestController {
   }
 
   @Get()
+  @Roles(RoleName.ADMIN, RoleName.LOGISTICIAN, RoleName.CLIENT)
   findAll(@Req() req) {
     return this.requestService.findAll(req.user);
   }
 
   @Get(':id')
+  @Roles(RoleName.ADMIN, RoleName.LOGISTICIAN, RoleName.CLIENT)
   findOne(@Param('id', ParseUUIDPipe) id: string, @Req() req) {
     return this.requestService.findOne(id, req.user);
   }

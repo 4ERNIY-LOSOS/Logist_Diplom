@@ -8,6 +8,7 @@ import {
   Delete,
   UseGuards,
   ParseUUIDPipe,
+  Req, // Import Req
 } from '@nestjs/common';
 import { CompanyService } from './company.service';
 import { CreateCompanyDto } from './dto/create-company.dto';
@@ -21,6 +22,12 @@ import { RoleName } from '../auth/enums/role-name.enum';
 @UseGuards(AuthGuard('jwt'), RolesGuard)
 export class CompanyController {
   constructor(private readonly companyService: CompanyService) {}
+
+  @Get('me')
+  @Roles(RoleName.CLIENT)
+  findMyCompany(@Req() req) {
+    return this.companyService.findMyCompany(req.user.userId);
+  }
 
   @Post()
   @Roles(RoleName.ADMIN, RoleName.LOGISTICIAN)

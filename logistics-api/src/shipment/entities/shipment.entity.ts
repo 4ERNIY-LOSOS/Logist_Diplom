@@ -1,4 +1,3 @@
-
 import {
   Column,
   CreateDateColumn,
@@ -23,7 +22,9 @@ export class Shipment {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @OneToOne(() => Request, (request) => request.shipment)
+  @OneToOne(() => Request, (request) => request.shipment, {
+    onDelete: 'CASCADE',
+  })
   @JoinColumn({ name: 'request_id' })
   request: Request;
 
@@ -40,7 +41,10 @@ export class Shipment {
   status: ShipmentStatus;
 
   // For LTL shipments
-  @ManyToOne(() => LtlShipment, (ltl) => ltl.shipments, { nullable: true })
+  @ManyToOne(() => LtlShipment, (ltl) => ltl.shipments, {
+    nullable: true,
+    onDelete: 'SET NULL',
+  })
   @JoinColumn({ name: 'ltl_shipment_id' })
   ltlShipment: LtlShipment;
 
@@ -50,21 +54,21 @@ export class Shipment {
   @OneToMany(() => GpsLog, (log) => log.shipment)
   gpsLogs: GpsLog[];
 
-  @Column({ name: 'planned_pickup_date' })
+  @Column({ type: 'timestamptz', name: 'planned_pickup_date' })
   plannedPickupDate: Date;
 
-  @Column({ name: 'planned_delivery_date' })
+  @Column({ type: 'timestamptz', name: 'planned_delivery_date' })
   plannedDeliveryDate: Date;
 
-  @Column({ name: 'actual_pickup_date', nullable: true })
+  @Column({ type: 'timestamptz', name: 'actual_pickup_date', nullable: true })
   actualPickupDate: Date;
 
-  @Column({ name: 'actual_delivery_date', nullable: true })
+  @Column({ type: 'timestamptz', name: 'actual_delivery_date', nullable: true })
   actualDeliveryDate: Date;
 
-  @CreateDateColumn({ name: 'created_at' })
+  @CreateDateColumn({ type: 'timestamptz', name: 'created_at' })
   createdAt: Date;
 
-  @UpdateDateColumn({ name: 'updated_at' })
+  @UpdateDateColumn({ type: 'timestamptz', name: 'updated_at' })
   updatedAt: Date;
 }

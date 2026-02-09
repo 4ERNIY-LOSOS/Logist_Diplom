@@ -13,17 +13,35 @@ import {
   FormControl,
   InputLabel,
 } from '@mui/material';
+import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+import 'leaflet/dist/leaflet.css'; // Import Leaflet CSS
+import L from 'leaflet'; // Import Leaflet for custom icon
+
+// Fix for default Leaflet icon not showing up
+delete (L.Icon.Default.prototype as any)._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
+  iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
+  shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+});
+
 
 // Interfaces can be more detailed
 interface Driver { id: string; firstName: string; lastName: string; }
 interface Vehicle { id: string; licensePlate: string; model: string; }
+interface Address { 
+  city: string; 
+  street: string; 
+  latitude?: number; 
+  longitude?: number; 
+}
 interface Request {
   id: string;
   pickupDate: string;
   deliveryDate: string;
   company: { name: string };
-  pickupAddress: { city: string; street: string; };
-  deliveryAddress: { city: string; street: string; };
+  pickupAddress: Address;
+  deliveryAddress: Address;
 }
 
 const ProcessRequestForm: React.FC = () => {
@@ -88,6 +106,27 @@ const ProcessRequestForm: React.FC = () => {
       }
     };
 
+    const defaultCenter: [number, number] = [55.75, 37.6]; // Default to Moscow
+    let mapCenter: [number, number] = defaultCenter;
+    let pickupCoords: [number, number] | null = null;
+    let deliveryCoords: [number, number] | null = null;
+
+    if (request?.pickupAddress?.latitude && request?.pickupAddress?.longitude) {
+        pickupCoords = [request.pickupAddress.latitude, request.pickupAddress.longitude];
+    }
+    if (request?.deliveryAddress?.latitude && request?.deliveryAddress?.longitude) {
+        deliveryCoords = [request.deliveryAddress.latitude, request.deliveryAddress.longitude];
+    }
+
+    if (pickupCoords && deliveryCoords) {
+        mapCenter = [(pickupCoords[0] + deliveryCoords[0]) / 2, (pickupCoords[1] + deliveryCoords[1]) / 2];
+    } else if (pickupCoords) {
+        mapCenter = pickupCoords;
+    } else if (deliveryCoords) {
+        mapCenter = deliveryCoords;
+    }
+
+
     if (loading) {
         return <Box sx={{ display: 'flex', justifyContent: 'center', my: 4 }}><CircularProgress /></Box>;
     }
@@ -98,7 +137,7 @@ const ProcessRequestForm: React.FC = () => {
 
 
   return (
-    <Box component={Paper} sx={{ p: 4, my: 2, maxWidth: '800px', mx: 'auto' }}>
+    <Box component={Paper} sx={{ p: 4, my: 2, maxWidth: '1200px', mx: 'auto' }}>
       <Typography variant="h5" gutterBottom>
         Обработка заявки: {request?.id.substring(0, 8)}...
       </Typography>
@@ -113,6 +152,27 @@ const ProcessRequestForm: React.FC = () => {
       
       {message && <Alert severity="success" sx={{ mb: 2 }}>{message}</Alert>}
       {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
+
+      {request && (pickupCoords || deliveryCoords) && (
+        <Box sx={{ height: '400px', width: '100%', mb: 3 }}>
+            <MapContainer center={mapCenter} zoom={pickupCoords && deliveryCoords ? 6 : 10} style={{ height: '100%', width: '100%' }}>
+                <TileLayer
+                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                />
+                {pickupCoords && (
+                    <Marker position={pickupCoords}>
+                        <Popup>Адрес забора: {request.pickupAddress.street}, {request.pickupAddress.city}</Popup>
+                    </Marker>
+                )}
+                {deliveryCoords && (
+                    <Marker position={deliveryCoords}>
+                        <Popup>Адрес доставки: {request.deliveryAddress.street}, {request.deliveryAddress.city}</Popup>
+                    </Marker>
+                )}
+            </MapContainer>
+        </Box>
+      )}
 
       <Box component="form" onSubmit={handleSubmit} sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
         

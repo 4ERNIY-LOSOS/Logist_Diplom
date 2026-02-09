@@ -7,15 +7,19 @@ import {
   IsNumber,
   Min,
 } from 'class-validator';
-import { Type } from 'class-transformer';
+import { Type, Transform } from 'class-transformer'; // Ensure Type and Transform are imported
 import { CreateAddressDto } from '../../address/dto/create-address.dto';
 import { CreateCargoDto } from '../../cargo/dto/create-cargo.dto';
 
 export class CreateRequestDto {
   @IsDateString()
+  @Type(() => Date)
+  @Transform(({ value }) => value && new Date(value), { toClassOnly: true }) // Convert to Date object, assuming UTC
   pickupDate: Date;
 
   @IsDateString()
+  @Type(() => Date)
+  @Transform(({ value }) => value && new Date(value), { toClassOnly: true }) // Convert to Date object, assuming UTC
   deliveryDate: Date;
 
   @IsNotEmpty()
@@ -36,7 +40,17 @@ export class CreateRequestDto {
   @IsOptional()
   @IsNumber()
   @Min(0)
+  distanceKm?: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
   preliminaryCost?: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  finalCost?: number;
 
   @IsOptional()
   notes?: string;

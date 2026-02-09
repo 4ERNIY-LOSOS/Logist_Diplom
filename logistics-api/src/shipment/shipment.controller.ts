@@ -8,6 +8,7 @@ import {
   Delete,
   UseGuards,
   ParseUUIDPipe,
+  Req,
 } from '@nestjs/common';
 import { ShipmentService } from './shipment.service';
 import { CreateShipmentDto } from './dto/create-shipment.dto';
@@ -39,13 +40,15 @@ export class ShipmentController {
   }
 
   @Get()
-  findAll() {
-    return this.shipmentService.findAll();
+  @Roles(RoleName.ADMIN, RoleName.LOGISTICIAN, RoleName.CLIENT)
+  findAll(@Req() req) {
+    return this.shipmentService.findAll(req.user);
   }
 
   @Get(':id')
-  findOne(@Param('id', ParseUUIDPipe) id: string) {
-    return this.shipmentService.findOne(id);
+  @Roles(RoleName.ADMIN, RoleName.LOGISTICIAN, RoleName.CLIENT)
+  findOne(@Param('id', ParseUUIDPipe) id: string, @Req() req) {
+    return this.shipmentService.findOne(id, req.user);
   }
 
   @Patch(':id')

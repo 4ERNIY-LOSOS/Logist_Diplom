@@ -19,6 +19,9 @@ import PeopleIcon from '@mui/icons-material/People';
 import BusinessIcon from '@mui/icons-material/Business';
 import LocalShippingIcon from '@mui/icons-material/LocalShipping';
 import AssignmentIcon from '@mui/icons-material/Assignment';
+import BarChartIcon from '@mui/icons-material/BarChart'; // For Reports
+import SettingsIcon from '@mui/icons-material/Settings'; // For Tariffs (Admin)
+import { NotificationBell } from './NotificationBell'; // Import NotificationBell
 
 const drawerWidth = 240;
 
@@ -33,12 +36,13 @@ const MainLayout: React.FC = () => {
 
   const navItems = {
     ADMIN: [
-      { text: 'Пользователи', icon: <PeopleIcon />, path: '/admin/users' },
-      { text: 'Компании', icon: <BusinessIcon />, path: '/admin/companies' },
+      { text: 'Панель управления', icon: <DashboardIcon />, path: '/admin' }, // Point to new admin dashboard
+      { text: 'Отчеты', icon: <BarChartIcon />, path: '/reports' }, // Placeholder for reports
     ],
     LOGISTICIAN: [
       { text: 'Панель управления', icon: <DashboardIcon />, path: '/logistician/dashboard' },
-      { text: 'Перевозки', icon: <LocalShippingIcon />, path: '/logistician/shipments' },
+      { text: 'Перевозки', icon: <LocalShippingIcon />, path: '/logistician/shipments' }, // Assuming shipments list
+      { text: 'Отчеты', icon: <BarChartIcon />, path: '/reports' }, // Placeholder for reports
     ],
     CLIENT: [
       { text: 'Панель управления', icon: <DashboardIcon />, path: '/client/dashboard' },
@@ -58,6 +62,7 @@ const MainLayout: React.FC = () => {
           <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 1 }}>
             Логистика
           </Typography>
+          <NotificationBell /> {/* Integrate NotificationBell here */}
           <Typography sx={{ mr: 2 }}>
             Добро пожаловать, {user?.username} ({user?.role})
           </Typography>

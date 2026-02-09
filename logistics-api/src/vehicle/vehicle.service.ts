@@ -18,38 +18,56 @@ export class VehicleService {
   async create(createVehicleDto: CreateVehicleDto): Promise<Vehicle> {
     const { typeId, ...rest } = createVehicleDto;
 
-    const vehicleType = await this.vehicleTypeRepository.findOne({ where: { id: typeId } });
+    const vehicleType = await this.vehicleTypeRepository.findOne({
+      where: { id: typeId },
+    });
     if (!vehicleType) {
       throw new NotFoundException(`VehicleType with ID "${typeId}" not found`);
     }
 
-    const vehicle = this.vehicleRepository.create({ ...rest, type: vehicleType });
+    const vehicle = this.vehicleRepository.create({
+      ...rest,
+      type: vehicleType,
+    });
     return this.vehicleRepository.save(vehicle);
   }
 
   findAll(isAvailable?: boolean): Promise<Vehicle[]> {
     if (isAvailable !== undefined) {
-      return this.vehicleRepository.find({ where: { isAvailable }, relations: ['type'] });
+      return this.vehicleRepository.find({
+        where: { isAvailable },
+        relations: ['type'],
+      });
     }
     return this.vehicleRepository.find({ relations: ['type'] });
   }
 
   async findOne(id: string): Promise<Vehicle> {
-    const vehicle = await this.vehicleRepository.findOne({ where: { id }, relations: ['type'] });
+    const vehicle = await this.vehicleRepository.findOne({
+      where: { id },
+      relations: ['type'],
+    });
     if (!vehicle) {
       throw new NotFoundException(`Vehicle with ID "${id}" not found`);
     }
     return vehicle;
   }
 
-  async update(id: string, updateVehicleDto: UpdateVehicleDto): Promise<Vehicle> {
+  async update(
+    id: string,
+    updateVehicleDto: UpdateVehicleDto,
+  ): Promise<Vehicle> {
     const vehicle = await this.findOne(id);
     const { typeId, ...rest } = updateVehicleDto;
 
     if (typeId) {
-      const vehicleType = await this.vehicleTypeRepository.findOne({ where: { id: typeId } });
+      const vehicleType = await this.vehicleTypeRepository.findOne({
+        where: { id: typeId },
+      });
       if (!vehicleType) {
-        throw new NotFoundException(`VehicleType with ID "${typeId}" not found`);
+        throw new NotFoundException(
+          `VehicleType with ID "${typeId}" not found`,
+        );
       }
       vehicle.type = vehicleType;
     }

@@ -7,6 +7,7 @@ import { ShipmentService } from './shipment.service';
 import { RequestModule } from '../request/request.module';
 import { DriverModule } from '../driver/driver.module';
 import { VehicleModule } from '../vehicle/vehicle.module';
+import { UserModule } from '../user/user.module'; // Import UserModule
 
 @Module({
   imports: [
@@ -14,6 +15,7 @@ import { VehicleModule } from '../vehicle/vehicle.module';
     RequestModule,
     DriverModule,
     VehicleModule,
+    UserModule, // Add UserModule to imports
   ],
   controllers: [ShipmentController],
   providers: [ShipmentService],
