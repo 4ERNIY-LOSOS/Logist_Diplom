@@ -45,7 +45,7 @@ export class User {
   isEmailVerified: boolean;
 
   @Exclude()
-  @Column({ name: 'email_verification_token', nullable: true })
+  @Column({ type: 'varchar', name: 'email_verification_token', nullable: true })
   emailVerificationToken: string | null;
 
   @ManyToOne('Role', 'users')

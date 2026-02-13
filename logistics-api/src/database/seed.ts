@@ -15,6 +15,7 @@ import { Address } from '../address/entities/address.entity';
 import { CargoType } from '../cargo/entities/cargo-type.entity';
 import { CargoRequirement } from '../cargo/entities/cargo-requirement.entity';
 import { ShipmentMilestone } from '../shipment/entities/shipment-milestone.entity';
+import { Document } from '../document/entities/document.entity';
 import { LtlShipment } from '../ltl-shipment/entities/ltl-shipment.entity';
 import { ShipmentRouteStop } from '../ltl-shipment/entities/shipment-route-stop.entity';
 import { Warehouse } from '../warehouse/entities/warehouse.entity';
@@ -34,7 +35,8 @@ async function seed() {
         Role, RequestStatus, ShipmentStatus, User, Company, Driver, Vehicle, Tariff,
         CargoRequest, Shipment, Cargo, Address, CargoType, CargoRequirement,
         ShipmentMilestone, LtlShipment, ShipmentRouteStop, Warehouse,
-        Invoice, AuditLog, GpsLog, Notification, VehicleType, VehicleMaintenance
+        Invoice, AuditLog, GpsLog, Notification, VehicleType, VehicleMaintenance,
+        Document
     ],
     synchronize: true,
   });
