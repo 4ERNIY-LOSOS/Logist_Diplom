@@ -15,12 +15,9 @@ import {
   Button,
 } from '@mui/material';
 import DashboardIcon from '@mui/icons-material/Dashboard';
-import PeopleIcon from '@mui/icons-material/People';
-import BusinessIcon from '@mui/icons-material/Business';
 import LocalShippingIcon from '@mui/icons-material/LocalShipping';
 import AssignmentIcon from '@mui/icons-material/Assignment';
 import BarChartIcon from '@mui/icons-material/BarChart'; // For Reports
-import SettingsIcon from '@mui/icons-material/Settings'; // For Tariffs (Admin)
 import { NotificationBell } from './NotificationBell'; // Import NotificationBell
 
 const drawerWidth = 240;

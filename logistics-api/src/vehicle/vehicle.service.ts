@@ -7,7 +7,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Not } from 'typeorm';
 import { CreateVehicleDto } from './dto/create-vehicle.dto';
 import { UpdateVehicleDto } from './dto/update-vehicle.dto';
-import { Vehicle } from './entities/vehicle.entity';
+import { Vehicle, VehicleStatus } from './entities/vehicle.entity';
 import { VehicleType } from './entities/vehicle-type.entity';
 
 @Injectable()
@@ -48,15 +48,19 @@ export class VehicleService {
 
   async findAll(options: {
     isAvailable?: boolean;
+    status?: VehicleStatus;
     page?: number;
     limit?: number;
   }): Promise<{ data: Vehicle[]; total: number }> {
-    const { isAvailable, page = 1, limit = 10 } = options;
+    const { isAvailable, status, page = 1, limit = 10 } = options;
     const skip = (page - 1) * limit;
 
     const where: any = {};
     if (isAvailable !== undefined) {
       where.isAvailable = isAvailable;
+    }
+    if (status) {
+      where.status = status;
     }
 
     const [data, total] = await this.vehicleRepository.findAndCount({

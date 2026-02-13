@@ -135,6 +135,9 @@ const ProcessRequestForm: React.FC = () => {
         return <Alert severity="error">{error}</Alert>;
     }
 
+    const MapContainerAny = MapContainer as any;
+    const TileLayerAny = TileLayer as any;
+    const MarkerAny = Marker as any;
 
   return (
     <Box component={Paper} sx={{ p: 4, my: 2, maxWidth: '1200px', mx: 'auto' }}>
@@ -155,22 +158,22 @@ const ProcessRequestForm: React.FC = () => {
 
       {request && (pickupCoords || deliveryCoords) && (
         <Box sx={{ height: '400px', width: '100%', mb: 3 }}>
-            <MapContainer center={mapCenter} zoom={pickupCoords && deliveryCoords ? 6 : 10} style={{ height: '100%', width: '100%' }}>
-                <TileLayer
+            <MapContainerAny center={mapCenter} zoom={pickupCoords && deliveryCoords ? 6 : 10} style={{ height: '100%', width: '100%' }}>
+                <TileLayerAny
                 attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
                 url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                 />
                 {pickupCoords && (
-                    <Marker position={pickupCoords}>
+                    <MarkerAny position={pickupCoords}>
                         <Popup>Адрес забора: {request.pickupAddress.street}, {request.pickupAddress.city}</Popup>
-                    </Marker>
+                    </MarkerAny>
                 )}
                 {deliveryCoords && (
-                    <Marker position={deliveryCoords}>
+                    <MarkerAny position={deliveryCoords}>
                         <Popup>Адрес доставки: {request.deliveryAddress.street}, {request.deliveryAddress.city}</Popup>
-                    </Marker>
+                    </MarkerAny>
                 )}
-            </MapContainer>
+            </MapContainerAny>
         </Box>
       )}
 

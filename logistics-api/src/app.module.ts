@@ -19,6 +19,9 @@ import { ShipmentModule } from './shipment/shipment.module';
 import { TariffModule } from './tariff/tariff.module';
 import { VehicleModule } from './vehicle/vehicle.module';
 import { AuditLogModule } from './audit-log/audit-log.module';
+import { ReportsModule } from './reports/reports.module';
+import { APP_INTERCEPTOR } from '@nestjs/core';
+import { AuditInterceptor } from './audit-log/audit.interceptor';
 
 @Module({
   imports: [
@@ -56,8 +59,15 @@ import { AuditLogModule } from './audit-log/audit-log.module';
     TariffModule,
     VehicleModule,
     AuditLogModule,
+    ReportsModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [
+    AppService,
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: AuditInterceptor,
+    },
+  ],
 })
 export class AppModule {}

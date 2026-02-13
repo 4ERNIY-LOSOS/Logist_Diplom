@@ -2,7 +2,9 @@ import React from 'react';
 import { Box, Typography, Tabs, Tab } from '@mui/material';
 import { UserManagementTable } from './UserManagementTable';
 import { CompanyManagementTable } from './CompanyManagementTable';
-import { TariffManagementTable } from './TariffManagementTable'; // Import the new TariffManagementTable
+import { TariffManagementTable } from './TariffManagementTable';
+import { DriverManagementTable } from './DriverManagementTable';
+import { VehicleManagementTable } from './VehicleManagementTable';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -40,7 +42,7 @@ function a11yProps(index: number) {
 export const AdminDashboard: React.FC = () => {
   const [value, setValue] = React.useState(0);
 
-  const handleChange = (event: React.SyntheticEvent, newValue: number) => {
+  const handleChange = (_event: React.SyntheticEvent, newValue: number) => {
     setValue(newValue);
   };
 
@@ -51,9 +53,11 @@ export const AdminDashboard: React.FC = () => {
       </Typography>
       <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
         <Tabs value={value} onChange={handleChange} aria-label="admin dashboard tabs">
-          <Tab label="Управление пользователями" {...a11yProps(0)} />
-          <Tab label="Управление компаниями" {...a11yProps(1)} />
-          <Tab label="Управление тарифами" {...a11yProps(2)} /> {/* New tab */}
+          <Tab label="Пользователи" {...a11yProps(0)} />
+          <Tab label="Компании" {...a11yProps(1)} />
+          <Tab label="Тарифы" {...a11yProps(2)} />
+          <Tab label="Водители" {...a11yProps(3)} />
+          <Tab label="Транспорт" {...a11yProps(4)} />
         </Tabs>
       </Box>
       <CustomTabPanel value={value} index={0}>
@@ -62,8 +66,14 @@ export const AdminDashboard: React.FC = () => {
       <CustomTabPanel value={value} index={1}>
         <CompanyManagementTable />
       </CustomTabPanel>
-      <CustomTabPanel value={value} index={2}> {/* New tab panel */}
+      <CustomTabPanel value={value} index={2}>
         <TariffManagementTable />
+      </CustomTabPanel>
+      <CustomTabPanel value={value} index={3}>
+        <DriverManagementTable />
+      </CustomTabPanel>
+      <CustomTabPanel value={value} index={4}>
+        <VehicleManagementTable />
       </CustomTabPanel>
     </Box>
   );

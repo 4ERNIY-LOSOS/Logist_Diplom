@@ -8,6 +8,7 @@ import {
   OneToOne,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
+  Index,
 } from 'typeorm';
 import { Request } from '../../request/entities/request.entity';
 import { Driver } from '../../driver/entities/driver.entity';
@@ -36,6 +37,7 @@ export class Shipment {
   @JoinColumn({ name: 'vehicle_id' })
   vehicle: Vehicle;
 
+  @Index()
   @ManyToOne(() => ShipmentStatus, (status) => status.shipments)
   @JoinColumn({ name: 'status_id' })
   status: ShipmentStatus;
@@ -46,7 +48,7 @@ export class Shipment {
     onDelete: 'SET NULL',
   })
   @JoinColumn({ name: 'ltl_shipment_id' })
-  ltlShipment: LtlShipment;
+  ltlShipment: LtlShipment | null;
 
   @OneToMany(() => Document, (document) => document.shipment)
   documents: Document[];
@@ -54,9 +56,11 @@ export class Shipment {
   @OneToMany(() => GpsLog, (log) => log.shipment)
   gpsLogs: GpsLog[];
 
+  @Index()
   @Column({ type: 'timestamptz', name: 'planned_pickup_date' })
   plannedPickupDate: Date;
 
+  @Index()
   @Column({ type: 'timestamptz', name: 'planned_delivery_date' })
   plannedDeliveryDate: Date;
 

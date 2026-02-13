@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { Box, Typography, Tabs, Tab, Paper } from '@mui/material';
+import { Box, Typography, Tabs, Tab } from '@mui/material';
 import LogisticianRequestsTable from './LogisticianRequestsTable';
 import { LtlShipmentManagementTable } from './LtlShipmentManagementTable'; // Import LtlShipmentManagementTable
+import ShipmentTracking from './ShipmentTracking';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -39,7 +40,7 @@ function a11yProps(index: number) {
 const LogisticianDashboard: React.FC = () => {
   const [value, setValue] = useState(0);
 
-  const handleChange = (event: React.SyntheticEvent, newValue: number) => {
+  const handleChange = (_event: React.SyntheticEvent, newValue: number) => {
     setValue(newValue);
   };
 
@@ -52,6 +53,7 @@ const LogisticianDashboard: React.FC = () => {
         <Tabs value={value} onChange={handleChange} aria-label="logistician dashboard tabs">
           <Tab label="Заявки на перевозку" {...a11yProps(0)} />
           <Tab label="Сборные перевозки (LTL)" {...a11yProps(1)} />
+          <Tab label="Отслеживание" {...a11yProps(2)} />
         </Tabs>
       </Box>
       <CustomTabPanel value={value} index={0}>
@@ -59,6 +61,9 @@ const LogisticianDashboard: React.FC = () => {
       </CustomTabPanel>
       <CustomTabPanel value={value} index={1}>
         <LtlShipmentManagementTable />
+      </CustomTabPanel>
+      <CustomTabPanel value={value} index={2}>
+        <ShipmentTracking />
       </CustomTabPanel>
     </Box>
   );

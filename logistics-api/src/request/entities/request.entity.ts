@@ -8,6 +8,7 @@ import {
   OneToOne,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
+  Index,
 } from 'typeorm';
 import { User } from '../../user/entities/user.entity';
 import { Company } from '../../company/entities/company.entity';
@@ -27,10 +28,12 @@ export class Request {
   createdByUser: User;
 
   // The company this request belongs to
+  @Index()
   @ManyToOne(() => Company)
   @JoinColumn({ name: 'company_id' })
   company: Company;
 
+  @Index()
   @ManyToOne(() => RequestStatus, (status) => status.requests)
   @JoinColumn({ name: 'status_id' })
   status: RequestStatus;
@@ -56,6 +59,14 @@ export class Request {
 
   @Column({ type: 'timestamptz', name: 'delivery_date' })
   deliveryDate: Date;
+
+  @Column('decimal', {
+    precision: 10,
+    scale: 2,
+    name: 'distance_km',
+    default: 0,
+  })
+  distanceKm: number;
 
   @Column('decimal', {
     precision: 10,

@@ -3,6 +3,7 @@ import {
   NotFoundException,
   ForbiddenException,
   BadRequestException,
+  Logger,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -17,6 +18,8 @@ import { TariffService } from '../tariff/tariff.service'; // Import TariffServic
 
 @Injectable()
 export class RequestService {
+  private readonly logger = new Logger(RequestService.name);
+
   constructor(
     @InjectRepository(Request)
     private requestRepository: Repository<Request>,
@@ -44,6 +47,13 @@ export class RequestService {
     // Date validation
     const parsedPickupDate = new Date(pickupDate);
     const parsedDeliveryDate = new Date(deliveryDate);
+    const now = new Date();
+
+    if (parsedPickupDate < now) {
+      throw new BadRequestException(
+        'Pickup date cannot be in the past.',
+      );
+    }
 
     if (parsedDeliveryDate < parsedPickupDate) {
       throw new BadRequestException(
@@ -90,9 +100,8 @@ export class RequestService {
         ).toFixed(2),
       ); // Round to 2 decimal places
     } catch (tariffError) {
-      console.warn(
-        'Could not calculate preliminary cost, no active tariff found or calculation error:',
-        tariffError.message,
+      this.logger.warn(
+        `Could not calculate preliminary cost: ${tariffError.message}`,
       );
       // Proceed without preliminary cost if tariff not found
       preliminaryCost = 0;

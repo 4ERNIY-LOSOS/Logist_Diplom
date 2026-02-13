@@ -17,6 +17,9 @@ import { ShipmentStatus } from './entities/shipment-status.entity';
 import { RequestStatus } from '../request/entities/request-status.entity';
 import { UserService } from '../user/user.service'; // Import UserService
 import { RoleName } from '../auth/enums/role-name.enum'; // Import RoleName
+import { Document, DocumentType } from '../document/entities/document.entity';
+import { DriverStatus } from '../driver/entities/driver.entity';
+import { VehicleStatus } from '../vehicle/entities/vehicle.entity';
 
 @Injectable()
 export class ShipmentService {
@@ -105,7 +108,24 @@ export class ShipmentService {
         }
 
         driver.isAvailable = false;
+        driver.status = DriverStatus.BUSY;
+        // Validate vehicle capacity
+        let totalWeight = 0;
+        let totalVolume = 0;
+        request.cargos.forEach(cargo => {
+          totalWeight += Number(cargo.weight);
+          totalVolume += Number(cargo.volume);
+        });
+
+        if (totalWeight > vehicle.payloadCapacity) {
+          throw new BadRequestException(`Vehicle payload capacity exceeded. Cargo weight: ${totalWeight}, Vehicle capacity: ${vehicle.payloadCapacity}`);
+        }
+        if (totalVolume > vehicle.volumeCapacity) {
+          throw new BadRequestException(`Vehicle volume capacity exceeded. Cargo volume: ${totalVolume}, Vehicle capacity: ${vehicle.volumeCapacity}`);
+        }
+
         vehicle.isAvailable = false;
+        vehicle.status = VehicleStatus.BUSY;
         await transactionalEntityManager.save(driver);
         await transactionalEntityManager.save(vehicle);
 
@@ -182,18 +202,34 @@ export class ShipmentService {
         ) {
           if (shipment.driver) {
             shipment.driver.isAvailable = true;
+            shipment.driver.status = DriverStatus.AVAILABLE;
             await transactionalEntityManager.save(shipment.driver);
           }
           if (shipment.vehicle) {
             shipment.vehicle.isAvailable = true;
+            shipment.vehicle.status = VehicleStatus.AVAILABLE;
             await transactionalEntityManager.save(shipment.vehicle);
           }
         }
 
         // Handle specific logic for 'Delivered'
         if (newStatus.name === 'Доставлена') {
+          // Check for POD document
+          const podDocument = await transactionalEntityManager.findOne(Document, {
+            where: {
+              shipment: { id: shipment.id },
+              type: DocumentType.PROOF_OF_DELIVERY,
+            },
+          });
+
+          if (!podDocument) {
+            throw new BadRequestException(
+              'Cannot mark shipment as delivered without a Proof of Delivery (POD) document attached.',
+            );
+          }
+
           shipment.actualDeliveryDate = new Date();
-          if (shipment.request && shipment.request.finalCost === null) {
+          if (shipment.request && (shipment.request.finalCost === null || shipment.request.finalCost === undefined)) {
             shipment.request.finalCost = shipment.request.preliminaryCost;
             await transactionalEntityManager.save(shipment.request);
           }
@@ -284,10 +320,12 @@ export class ShipmentService {
         // 1. Make driver and vehicle available again
         if (shipment.driver) {
           shipment.driver.isAvailable = true;
+          shipment.driver.status = DriverStatus.AVAILABLE;
           await transactionalEntityManager.save(shipment.driver);
         }
         if (shipment.vehicle) {
           shipment.vehicle.isAvailable = true;
+          shipment.vehicle.status = VehicleStatus.AVAILABLE;
           await transactionalEntityManager.save(shipment.vehicle);
         }
 

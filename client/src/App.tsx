@@ -13,6 +13,8 @@ import CssBaseline from '@mui/material/CssBaseline';
 import theme from './theme';
 import { AdminDashboard } from './components/admin/AdminDashboard'; // Import the new AdminDashboard
 import ReportsPage from './components/ReportsPage'; // Import ReportsPage
+import LtlManagement from './components/logistician/LtlManagement';
+import { Snackbar, Alert } from '@mui/material';
 
 // ProtectedRoute component
 interface ProtectedRouteProps {
@@ -34,10 +36,26 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
 
 // Root App component
 function App() {
+  const [error, setError] = React.useState<string | null>(null);
+
+  React.useEffect(() => {
+    const handleGlobalError = (event: PromiseRejectionEvent) => {
+        const message = event.reason?.response?.data?.message || event.reason?.message || 'An unexpected error occurred';
+        setError(message);
+    };
+    window.addEventListener('unhandledrejection', handleGlobalError);
+    return () => window.removeEventListener('unhandledrejection', handleGlobalError);
+  }, []);
+
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
       <AuthProvider>
+        <Snackbar open={!!error} autoHideDuration={6000} onClose={() => setError(null)} anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}>
+            <Alert onClose={() => setError(null)} severity="error" sx={{ width: '100%' }}>
+                {error}
+            </Alert>
+        </Snackbar>
         <Routes>
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
@@ -62,6 +80,7 @@ function App() {
               path="logistician/shipments"
               element={<LogisticianDashboard />}
             />
+            <Route path="logistician/ltl" element={<LtlManagement />} />
             <Route path="client/dashboard" element={<ClientDashboard />} />
             <Route path="client/requests" element={<ClientDashboard />} />
           </Route>

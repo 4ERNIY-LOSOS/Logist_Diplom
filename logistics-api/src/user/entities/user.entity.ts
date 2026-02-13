@@ -7,7 +7,9 @@ import {
   ManyToOne,
   JoinColumn,
   DeleteDateColumn,
+  Index,
 } from 'typeorm';
+import { Exclude } from 'class-transformer';
 import { Role } from '../../role/entities/role.entity';
 import { Company } from '../../company/entities/company.entity';
 
@@ -19,6 +21,7 @@ export class User {
   @Column({ unique: true })
   username: string;
 
+  @Exclude()
   @Column()
   password: string;
 
@@ -28,6 +31,7 @@ export class User {
   @Column({ name: 'last_name', nullable: true })
   lastName: string;
 
+  @Index()
   @Column({ unique: true })
   email: string;
 
@@ -37,10 +41,18 @@ export class User {
   @Column({ default: true })
   isActive: boolean;
 
+  @Column({ name: 'is_email_verified', default: false })
+  isEmailVerified: boolean;
+
+  @Exclude()
+  @Column({ name: 'email_verification_token', nullable: true })
+  emailVerificationToken: string | null;
+
   @ManyToOne(() => Role, (role) => role.users)
   @JoinColumn({ name: 'role_id' })
   role: Role;
 
+  @Index()
   @ManyToOne(() => Company, (company) => company.users, {
     nullable: true,
     onDelete: 'SET NULL',

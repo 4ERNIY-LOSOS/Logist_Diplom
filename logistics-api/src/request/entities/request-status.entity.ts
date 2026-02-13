@@ -1,4 +1,5 @@
 import { Column, Entity, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
+import { Exclude } from 'class-transformer';
 import { Request } from '../../request/entities/request.entity';
 
 @Entity('request_statuses')
@@ -12,6 +13,7 @@ export class RequestStatus {
   @Column({ nullable: true })
   description: string;
 
+  @Exclude()
   @OneToMany(() => Request, (request) => request.status)
   requests: Request[];
 }

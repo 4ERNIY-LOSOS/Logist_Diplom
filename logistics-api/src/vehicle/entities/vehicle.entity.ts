@@ -12,6 +12,12 @@ import {
 import { VehicleType } from './vehicle-type.entity';
 import { Shipment } from '../../shipment/entities/shipment.entity';
 
+export enum VehicleStatus {
+  AVAILABLE = 'AVAILABLE',
+  BUSY = 'BUSY',
+  MAINTENANCE = 'MAINTENANCE',
+}
+
 @Entity('vehicles')
 export class Vehicle {
   @PrimaryGeneratedColumn('uuid')
@@ -32,6 +38,13 @@ export class Vehicle {
 
   @Column('decimal', { precision: 10, scale: 2, name: 'volume_capacity' })
   volumeCapacity: number; // in m³
+
+  @Column({
+    type: 'enum',
+    enum: VehicleStatus,
+    default: VehicleStatus.AVAILABLE,
+  })
+  status: VehicleStatus;
 
   @Column({ default: true })
   isAvailable: boolean;

@@ -4,6 +4,7 @@ import { GpsLog } from './entities/gps-log.entity';
 import { GpsLogService } from './gps-log.service';
 import { GpsLogController } from './gps-log.controller';
 import { Shipment } from '../shipment/entities/shipment.entity';
+import { GpsSimulationService } from './gps-simulation.service';
 import { UserModule } from '../user/user.module'; // Import UserModule
 
 @Module({
@@ -12,7 +13,7 @@ import { UserModule } from '../user/user.module'; // Import UserModule
     UserModule, // Add UserModule here
   ],
   controllers: [GpsLogController],
-  providers: [GpsLogService],
-  exports: [GpsLogService, TypeOrmModule.forFeature([GpsLog])],
+  providers: [GpsLogService, GpsSimulationService],
+  exports: [GpsLogService, GpsSimulationService, TypeOrmModule.forFeature([GpsLog])],
 })
 export class GpsLogModule {}

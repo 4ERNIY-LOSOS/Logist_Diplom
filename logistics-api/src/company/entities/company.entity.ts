@@ -6,6 +6,7 @@ import {
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
+import { Exclude } from 'class-transformer';
 import { User } from '../../user/entities/user.entity';
 
 @Entity('companies')
@@ -28,6 +29,7 @@ export class Company {
   @Column({ default: true })
   isActive: boolean;
 
+  @Exclude()
   @OneToMany(() => User, (user) => user.company)
   users: User[];
 
