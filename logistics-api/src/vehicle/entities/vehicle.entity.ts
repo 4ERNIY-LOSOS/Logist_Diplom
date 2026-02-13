@@ -11,6 +11,7 @@ import {
 } from 'typeorm';
 import { VehicleType } from './vehicle-type.entity';
 import { Shipment } from '../../shipment/entities/shipment.entity';
+import { VehicleMaintenance } from './vehicle-maintenance.entity';
 
 export enum VehicleStatus {
   AVAILABLE = 'AVAILABLE',
@@ -51,6 +52,9 @@ export class Vehicle {
 
   @OneToMany(() => Shipment, (shipment) => shipment.vehicle)
   shipments: Shipment[];
+
+  @OneToMany(() => VehicleMaintenance, (m) => m.vehicle)
+  maintenanceLogs: VehicleMaintenance[];
 
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;

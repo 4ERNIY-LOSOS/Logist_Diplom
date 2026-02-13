@@ -8,7 +8,9 @@ import {
   OneToOne,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
+  DeleteDateColumn,
   Index,
+  Check,
 } from 'typeorm';
 import { User } from '../../user/entities/user.entity';
 import { Company } from '../../company/entities/company.entity';
@@ -18,6 +20,10 @@ import { RequestStatus } from './request-status.entity';
 import { Shipment } from '../../shipment/entities/shipment.entity';
 
 @Entity('requests')
+@Check(`"pickup_date" <= "delivery_date"`)
+@Check(`"distance_km" >= 0`)
+@Check(`"preliminary_cost" >= 0`)
+@Check(`"final_cost" >= 0`)
 export class Request {
   @PrimaryGeneratedColumn('uuid')
   id: string;
@@ -92,4 +98,7 @@ export class Request {
 
   @UpdateDateColumn({ type: 'timestamptz', name: 'updated_at' })
   updatedAt: Date;
+
+  @DeleteDateColumn({ type: 'timestamptz', name: 'deleted_at', nullable: true })
+  deletedAt: Date;
 }

@@ -8,6 +8,8 @@ import { RequestModule } from '../request/request.module';
 import { DriverModule } from '../driver/driver.module';
 import { VehicleModule } from '../vehicle/vehicle.module';
 import { UserModule } from '../user/user.module'; // Import UserModule
+import { SchedulingModule } from '../scheduling/scheduling.module';
+import { FinanceModule } from '../finance/finance.module';
 
 @Module({
   imports: [
@@ -16,6 +18,8 @@ import { UserModule } from '../user/user.module'; // Import UserModule
     DriverModule,
     VehicleModule,
     UserModule, // Add UserModule to imports
+    SchedulingModule,
+    FinanceModule,
   ],
   controllers: [ShipmentController],
   providers: [ShipmentService],

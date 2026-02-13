@@ -11,6 +11,7 @@ import {
   Req,
 } from '@nestjs/common';
 import { ShipmentService } from './shipment.service';
+import { MilestoneType } from './entities/shipment-milestone.entity';
 import { CreateShipmentDto } from './dto/create-shipment.dto';
 import { UpdateShipmentDto } from './dto/update-shipment.dto';
 import { UpdateShipmentStatusDto } from './dto/update-shipment-status.dto';
@@ -28,6 +29,16 @@ export class ShipmentController {
   @Roles(RoleName.ADMIN, RoleName.LOGISTICIAN)
   create(@Body() createShipmentDto: CreateShipmentDto) {
     return this.shipmentService.createFromRequest(createShipmentDto);
+  }
+
+  @Post(':id/milestone')
+  @Roles(RoleName.ADMIN, RoleName.LOGISTICIAN)
+  addMilestone(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body('type') type: MilestoneType,
+    @Body('details') details: any,
+  ) {
+    return this.shipmentService.addMilestone(id, type, details);
   }
 
   @Patch('status/:id')

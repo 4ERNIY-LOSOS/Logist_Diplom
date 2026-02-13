@@ -8,6 +8,7 @@ import {
 } from 'typeorm';
 import { Shipment } from '../../shipment/entities/shipment.entity';
 import { LtlShipmentStatus } from '../enums/ltl-shipment-status.enum';
+import { ShipmentRouteStop } from './shipment-route-stop.entity';
 
 @Entity('ltl_shipments')
 export class LtlShipment {
@@ -26,6 +27,9 @@ export class LtlShipment {
 
   @OneToMany(() => Shipment, (shipment) => shipment.ltlShipment)
   shipments: Shipment[];
+
+  @OneToMany(() => ShipmentRouteStop, (stop) => stop.ltlShipment, { cascade: true })
+  routeStops: ShipmentRouteStop[];
 
   @Column({ type: 'timestamptz', name: 'departure_date' })
   departureDate: Date;

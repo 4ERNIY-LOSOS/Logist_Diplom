@@ -20,6 +20,9 @@ import { TariffModule } from './tariff/tariff.module';
 import { VehicleModule } from './vehicle/vehicle.module';
 import { AuditLogModule } from './audit-log/audit-log.module';
 import { ReportsModule } from './reports/reports.module';
+import { PricingModule } from './pricing/pricing.module';
+import { WarehouseModule } from './warehouse/warehouse.module';
+import { FinanceModule } from './finance/finance.module';
 import { APP_INTERCEPTOR } from '@nestjs/core';
 import { AuditInterceptor } from './audit-log/audit.interceptor';
 
@@ -60,6 +63,9 @@ import { AuditInterceptor } from './audit-log/audit.interceptor';
     VehicleModule,
     AuditLogModule,
     ReportsModule,
+    PricingModule,
+    WarehouseModule,
+    FinanceModule,
   ],
   controllers: [AppController],
   providers: [
