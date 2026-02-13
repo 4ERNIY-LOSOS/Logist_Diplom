@@ -31,13 +31,13 @@ export class NotificationController {
   @Get('my')
   @Roles(RoleName.CLIENT, RoleName.LOGISTICIAN, RoleName.ADMIN)
   findAllMy(@Req() req: any) {
-    return this.notificationService.findAllByUserId(req.user.sub);
+    return this.notificationService.findAllByUserId(req.user.userId);
   }
 
   @Get('my/unread')
   @Roles(RoleName.CLIENT, RoleName.LOGISTICIAN, RoleName.ADMIN)
   findMyUnread(@Req() req: any) {
-    return this.notificationService.findUnreadByUserId(req.user.sub);
+    return this.notificationService.findUnreadByUserId(req.user.userId);
   }
 
   @Get('all')
@@ -49,19 +49,19 @@ export class NotificationController {
   @Patch(':id/read')
   @Roles(RoleName.CLIENT, RoleName.LOGISTICIAN, RoleName.ADMIN)
   markAsRead(@Param('id') id: string, @Req() req: any) {
-    return this.notificationService.markAsRead(id, req.user.sub);
+    return this.notificationService.markAsRead(id, req.user.userId);
   }
 
   @Patch('mark-all-read')
   @Roles(RoleName.CLIENT, RoleName.LOGISTICIAN, RoleName.ADMIN)
   markAllAsRead(@Req() req: any) {
-    return this.notificationService.markAllAsRead(req.user.sub);
+    return this.notificationService.markAllAsRead(req.user.userId);
   }
 
   @Delete(':id')
   @Roles(RoleName.CLIENT, RoleName.LOGISTICIAN, RoleName.ADMIN)
   remove(@Param('id') id: string, @Req() req: any) {
-    return this.notificationService.remove(id, req.user.sub);
+    return this.notificationService.remove(id, req.user.userId);
   }
 
   @Delete(':id/admin')

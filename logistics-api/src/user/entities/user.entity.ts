@@ -7,7 +7,9 @@ import {
   ManyToOne,
   JoinColumn,
   DeleteDateColumn,
+  Index,
 } from 'typeorm';
+import { Exclude } from 'class-transformer';
 import { Role } from '../../role/entities/role.entity';
 import { Company } from '../../company/entities/company.entity';
 
@@ -19,6 +21,7 @@ export class User {
   @Column({ unique: true })
   username: string;
 
+  @Exclude()
   @Column()
   password: string;
 
@@ -28,25 +31,34 @@ export class User {
   @Column({ name: 'last_name', nullable: true })
   lastName: string;
 
+  @Index()
   @Column({ unique: true })
   email: string;
 
   @Column({ nullable: true })
   phone: string;
 
-  @Column({ default: true })
+  @Column({ name: 'is_active', default: true })
   isActive: boolean;
 
-  @ManyToOne(() => Role, (role) => role.users)
-  @JoinColumn({ name: 'role_id' })
-  role: Role;
+  @Column({ name: 'is_email_verified', default: false })
+  isEmailVerified: boolean;
 
-  @ManyToOne(() => Company, (company) => company.users, {
+  @Exclude()
+  @Column({ type: 'varchar', name: 'email_verification_token', nullable: true })
+  emailVerificationToken: string | null;
+
+  @ManyToOne('Role', 'users')
+  @JoinColumn({ name: 'role_id' })
+  role: any;
+
+  @Index()
+  @ManyToOne('Company', 'users', {
     nullable: true,
     onDelete: 'SET NULL',
   })
   @JoinColumn({ name: 'company_id' })
-  company: Company;
+  company: any;
 
   @CreateDateColumn({ type: 'timestamptz', name: 'created_at' })
   createdAt: Date;

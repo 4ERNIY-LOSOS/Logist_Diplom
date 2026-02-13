@@ -14,15 +14,14 @@ import {
   CircularProgress,
   Chip,
   IconButton,
-  Link,
-  Tooltip,
+  Tooltip as MuiTooltip,
   Dialog,
   DialogTitle,
   DialogContent,
 } from '@mui/material';
 import FileDownloadIcon from '@mui/icons-material/FileDownload';
 import GpsFixedIcon from '@mui/icons-material/GpsFixed';
-import { MapContainer, TileLayer, Marker } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Tooltip as LeafletTooltip } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import moment from 'moment'; // Assuming moment is installed for date formatting
@@ -115,6 +114,11 @@ const ShipmentTrackingMap: React.FC<ShipmentTrackingMapProps> = ({ shipmentId, o
 
     if (!open) return null;
 
+    const MapContainerAny = MapContainer as any;
+    const TileLayerAny = TileLayer as any;
+    const MarkerAny = Marker as any;
+    const LeafletTooltipAny = LeafletTooltip as any;
+
     return (
         <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
             <DialogTitle>Отслеживание перевозки: {shipmentId.substring(0,8)}...</DialogTitle>
@@ -125,17 +129,17 @@ const ShipmentTrackingMap: React.FC<ShipmentTrackingMapProps> = ({ shipmentId, o
                     <Alert severity="error">{gpsError}</Alert>
                 ) : latestGpsLog ? (
                     <Box sx={{ height: '400px', width: '100%' }}>
-                        <MapContainer center={[latestGpsLog.latitude, latestGpsLog.longitude]} zoom={13} style={{ height: '100%', width: '100%' }}>
-                            <TileLayer
+                        <MapContainerAny center={[latestGpsLog.latitude, latestGpsLog.longitude]} zoom={13} style={{ height: '100%', width: '100%' }}>
+                            <TileLayerAny
                                 attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
                                 url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                             />
-                            <Marker position={[latestGpsLog.latitude, latestGpsLog.longitude]}>
-                                <Tooltip permanent>
+                            <MarkerAny position={[latestGpsLog.latitude, latestGpsLog.longitude]}>
+                                <LeafletTooltipAny permanent>
                                     Текущее местоположение: {latestGpsLog.latitude}, {latestGpsLog.longitude} <br/> ({moment(latestGpsLog.timestamp).format('HH:mm DD.MM.YYYY')})
-                                </Tooltip>
-                            </Marker>
-                        </MapContainer>
+                                </LeafletTooltipAny>
+                            </MarkerAny>
+                        </MapContainerAny>
                     </Box>
                 ) : (
                     <Typography>Данные GPS не найдены для этой перевозки.</Typography>
@@ -253,7 +257,7 @@ const ClientRequestsTable: React.FC = () => {
                     <TableCell> {/* Documents Cell */}
                       {request.documents && request.documents.length > 0 ? (
                         request.documents.map((doc) => (
-                          <Tooltip key={doc.id} title={doc.originalName}>
+                          <MuiTooltip key={doc.id} title={doc.originalName}>
                             <IconButton
                               size="small"
                               onClick={() => handleDownloadDocument(doc.id, doc.originalName)}
@@ -261,7 +265,7 @@ const ClientRequestsTable: React.FC = () => {
                             >
                               <FileDownloadIcon fontSize="small" />
                             </IconButton>
-                          </Tooltip>
+                          </MuiTooltip>
                         ))
                       ) : (
                         '-'

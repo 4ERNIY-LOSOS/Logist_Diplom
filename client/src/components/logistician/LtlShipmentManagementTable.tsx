@@ -38,6 +38,7 @@ interface Shipment {
     };
     driver: { firstName: string; lastName: string; };
     vehicle: { licensePlate: string; model: string; };
+    ltlShipment?: any;
 }
 
 interface LtlShipment {

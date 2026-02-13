@@ -3,6 +3,7 @@ import {
   NotFoundException,
   ForbiddenException,
   BadRequestException,
+  Logger,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -13,17 +14,19 @@ import { User } from '../user/entities/user.entity';
 import { RequestStatus } from './entities/request-status.entity';
 import { RoleName } from '../auth/enums/role-name.enum';
 import { UserService } from '../user/user.service';
-import { TariffService } from '../tariff/tariff.service'; // Import TariffService
+import { PricingEngineService } from '../pricing/pricing-engine.service';
 
 @Injectable()
 export class RequestService {
+  private readonly logger = new Logger(RequestService.name);
+
   constructor(
     @InjectRepository(Request)
     private requestRepository: Repository<Request>,
     @InjectRepository(RequestStatus)
     private requestStatusRepository: Repository<RequestStatus>,
     private userService: UserService,
-    private tariffService: TariffService, // Inject TariffService
+    private pricingEngineService: PricingEngineService,
   ) {}
 
   async create(
@@ -44,6 +47,13 @@ export class RequestService {
     // Date validation
     const parsedPickupDate = new Date(pickupDate);
     const parsedDeliveryDate = new Date(deliveryDate);
+    const now = new Date();
+
+    if (parsedPickupDate < now) {
+      throw new BadRequestException(
+        'Pickup date cannot be in the past.',
+      );
+    }
 
     if (parsedDeliveryDate < parsedPickupDate) {
       throw new BadRequestException(
@@ -70,29 +80,15 @@ export class RequestService {
 
     let preliminaryCost = 0;
     try {
-      const activeTariff = await this.tariffService.findActiveTariff();
-      let totalWeight = 0;
-      let totalVolume = 0;
-
-      cargos.forEach((cargo) => {
-        totalWeight += cargo.weight;
-        totalVolume += cargo.volume; // Use volume directly from DTO
+      const tempRequest = this.requestRepository.create({
+          distanceKm: distanceKm || 1,
+          cargos: cargos as any,
       });
-
-      const distance = distanceKm || 1; // Default to 1km if not provided for calculation
-
-      preliminaryCost = parseFloat(
-        (
-          activeTariff.baseFee +
-          distance * activeTariff.costPerKm +
-          totalWeight * activeTariff.costPerKg +
-          totalVolume * activeTariff.costPerM3
-        ).toFixed(2),
-      ); // Round to 2 decimal places
+      const calculation = await this.pricingEngineService.calculateRequestCost(tempRequest);
+      preliminaryCost = calculation.preliminaryCost;
     } catch (tariffError) {
-      console.warn(
-        'Could not calculate preliminary cost, no active tariff found or calculation error:',
-        tariffError.message,
+      this.logger.warn(
+        `Could not calculate preliminary cost: ${tariffError.message}`,
       );
       // Proceed without preliminary cost if tariff not found
       preliminaryCost = 0;
@@ -211,6 +207,6 @@ export class RequestService {
     // Because of `onDelete: 'CASCADE'` on the Shipment entity,
     // deleting the request will also delete the associated shipment.
     // Cargos will also be deleted due to `cascade: true`.
-    await this.requestRepository.remove(request);
+    await this.requestRepository.softRemove(request);
   }
 }

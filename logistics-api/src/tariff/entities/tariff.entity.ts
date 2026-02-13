@@ -4,9 +4,14 @@ import {
   Entity,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
+  Check,
 } from 'typeorm';
 
 @Entity('tariffs')
+@Check(`"cost_per_km" >= 0`)
+@Check(`"cost_per_kg" >= 0`)
+@Check(`"cost_per_m3" >= 0`)
+@Check(`"base_fee" >= 0`)
 export class Tariff {
   @PrimaryGeneratedColumn('uuid')
   id: string;
@@ -30,7 +35,7 @@ export class Tariff {
   @Column('decimal', { precision: 10, scale: 2, name: 'base_fee', default: 0 })
   baseFee: number;
 
-  @Column({ default: true })
+  @Column({ name: 'is_active', default: true })
   isActive: boolean;
 
   @CreateDateColumn({ name: 'created_at' })

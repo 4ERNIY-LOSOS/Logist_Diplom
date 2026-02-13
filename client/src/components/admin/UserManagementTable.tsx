@@ -26,7 +26,6 @@ import {
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import api from '../../api/api'; // Assuming you have an axios instance configured
-import { useAuth } from '../../context/AuthContext'; // To get user's token and role
 
 interface User {
   id: string;
@@ -64,7 +63,6 @@ export const UserManagementTable: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [openEditDialog, setOpenEditDialog] = useState(false);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
-  const { token } = useAuth(); // Assuming useAuth provides a way to get the token if needed for direct calls
 
   useEffect(() => {
     fetchUsersAndData();

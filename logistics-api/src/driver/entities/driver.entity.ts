@@ -9,6 +9,12 @@ import {
 } from 'typeorm';
 import { Shipment } from '../../shipment/entities/shipment.entity';
 
+export enum DriverStatus {
+  AVAILABLE = 'AVAILABLE',
+  BUSY = 'BUSY',
+  ON_LEAVE = 'ON_LEAVE',
+}
+
 @Entity('drivers')
 export class Driver {
   @PrimaryGeneratedColumn('uuid')
@@ -26,7 +32,14 @@ export class Driver {
   @Column({ nullable: true })
   phone: string;
 
-  @Column({ default: true })
+  @Column({
+    type: 'enum',
+    enum: DriverStatus,
+    default: DriverStatus.AVAILABLE,
+  })
+  status: DriverStatus;
+
+  @Column({ name: 'is_available', default: true })
   isAvailable: boolean;
 
   @OneToMany(() => Shipment, (shipment) => shipment.driver)

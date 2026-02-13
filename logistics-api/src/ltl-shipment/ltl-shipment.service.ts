@@ -12,6 +12,7 @@ import { UpdateLtlShipmentDto } from './dto/update-ltl-shipment.dto';
 import { Shipment } from '../shipment/entities/shipment.entity';
 import { ShipmentStatus } from '../shipment/entities/shipment-status.entity';
 import { LtlShipmentStatus } from './enums/ltl-shipment-status.enum';
+import { Document, DocumentType } from '../document/entities/document.entity';
 import { UserService } from '../user/user.service';
 import { RoleName } from '../auth/enums/role-name.enum';
 
@@ -139,12 +140,62 @@ export class LtlShipmentService {
   async findOne(id: string): Promise<LtlShipment> {
     const ltlShipment = await this.ltlShipmentRepository.findOne({
       where: { id },
-      relations: ['shipments', 'shipments.request.company'],
+      relations: ['shipments', 'shipments.status', 'shipments.request.company'],
     });
     if (!ltlShipment) {
       throw new NotFoundException(`LTL Shipment with ID "${id}" not found`);
     }
     return ltlShipment;
+  }
+
+  async updateStatus(id: string, status: LtlShipmentStatus): Promise<LtlShipment> {
+    return this.entityManager.transaction(async (transactionalEntityManager) => {
+        const ltlShipment = await transactionalEntityManager.findOne(LtlShipment, {
+            where: { id },
+            relations: ['shipments', 'shipments.status']
+        });
+
+        if (!ltlShipment) {
+            throw new NotFoundException(`LTL Shipment with ID "${id}" not found`);
+        }
+
+        const inTransitStatus = await transactionalEntityManager.findOne(ShipmentStatus, { where: { name: 'В пути' } });
+        const deliveredStatus = await transactionalEntityManager.findOne(ShipmentStatus, { where: { name: 'Доставлена' } });
+
+        if (!inTransitStatus || !deliveredStatus) {
+            throw new Error('Required shipment statuses not found.');
+        }
+
+        ltlShipment.status = status;
+
+        if (status === LtlShipmentStatus.IN_TRANSIT) {
+            for (const shipment of ltlShipment.shipments) {
+                shipment.status = inTransitStatus;
+            }
+        } else if (status === LtlShipmentStatus.COMPLETED) {
+            for (const shipment of ltlShipment.shipments) {
+                // Enforce POD check for each shipment in the LTL load
+                const pod = await transactionalEntityManager.findOne(Document, {
+                    where: {
+                        shipment: { id: shipment.id },
+                        type: DocumentType.PROOF_OF_DELIVERY
+                    }
+                });
+                if (!pod) {
+                    throw new BadRequestException(`Cannot complete LTL shipment: Shipment ${shipment.id.substring(0,8)} is missing a POD document.`);
+                }
+                shipment.status = deliveredStatus;
+                shipment.actualDeliveryDate = new Date();
+                if (shipment.request && (shipment.request.finalCost === null || shipment.request.finalCost === undefined)) {
+                    shipment.request.finalCost = shipment.request.preliminaryCost;
+                    await transactionalEntityManager.save(shipment.request);
+                }
+            }
+        }
+
+        await transactionalEntityManager.save(ltlShipment.shipments);
+        return transactionalEntityManager.save(ltlShipment);
+    });
   }
 
   async update(
@@ -205,7 +256,7 @@ export class LtlShipmentService {
             shipmentIdsToRemove.includes(s.id),
           );
           for (const shipment of shipmentsToRemove) {
-            shipment.ltlShipment = null;
+            shipment.ltlShipment = null as any;
             shipment.status = plannedStatus;
           }
           await transactionalEntityManager.save(shipmentsToRemove);
@@ -309,7 +360,7 @@ export class LtlShipmentService {
 
         if (ltlShipment.shipments && ltlShipment.shipments.length > 0) {
           for (const shipment of ltlShipment.shipments) {
-            shipment.ltlShipment = null;
+            shipment.ltlShipment = null as any;
             shipment.status = plannedStatus;
           }
           await transactionalEntityManager.save(ltlShipment.shipments);

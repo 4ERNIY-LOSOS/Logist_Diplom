@@ -21,7 +21,7 @@ export class Notification {
   @Column()
   message: string;
 
-  @Column({ default: false })
+  @Column({ name: 'is_read', default: false })
   isRead: boolean;
 
   @Column({ name: 'related_entity', nullable: true })

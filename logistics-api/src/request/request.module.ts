@@ -6,14 +6,14 @@ import { Request } from './entities/request.entity';
 import { RequestStatus } from './entities/request-status.entity';
 import { UserModule } from '../user/user.module';
 import { AuthModule } from '../auth/auth.module';
-import { TariffModule } from '../tariff/tariff.module'; // Import TariffModule
+import { PricingModule } from '../pricing/pricing.module';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([Request, RequestStatus]),
     UserModule, // To get access to UserService
     AuthModule, // To get access to guards
-    TariffModule, // Import TariffModule here
+    PricingModule,
   ],
   controllers: [RequestController],
   providers: [RequestService],

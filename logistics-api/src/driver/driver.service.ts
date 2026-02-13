@@ -7,7 +7,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Not } from 'typeorm';
 import { CreateDriverDto } from './dto/create-driver.dto';
 import { UpdateDriverDto } from './dto/update-driver.dto';
-import { Driver } from './entities/driver.entity';
+import { Driver, DriverStatus } from './entities/driver.entity';
 
 @Injectable()
 export class DriverService {
@@ -32,15 +32,19 @@ export class DriverService {
 
   async findAll(options: {
     isAvailable?: boolean;
+    status?: DriverStatus;
     page?: number;
     limit?: number;
   }): Promise<{ data: Driver[]; total: number }> {
-    const { isAvailable, page = 1, limit = 10 } = options;
+    const { isAvailable, status, page = 1, limit = 10 } = options;
     const skip = (page - 1) * limit;
 
     const where: any = {};
     if (isAvailable !== undefined) {
       where.isAvailable = isAvailable;
+    }
+    if (status) {
+      where.status = status;
     }
 
     const [data, total] = await this.driverRepository.findAndCount({

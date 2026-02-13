@@ -18,10 +18,13 @@
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
     "test:e2e": "jest --config ./test/jest-e2e.json",
-    "typeorm": "ts-node ./node_modules/typeorm/cli",
+    "typeorm": "cross-env PGCLIENTENCODING=UTF8 ts-node ./node_modules/typeorm/cli",
+    "seed": "cross-env PGCLIENTENCODING=UTF8 ts-node src/database/seed.ts",
     "migration:generate": "npm run typeorm -- -d src/database/typeorm.config.ts migration:generate",
     "migration:run": "npm run typeorm -- -d src/database/typeorm.config.ts migration:run",
-    "migration:revert": "npm run typeorm -- -d src/database/typeorm.config.ts migration:revert"
+    "migration:revert": "npm run typeorm -- -d src/database/typeorm.config.ts migration:revert",
+    "db:setup": "npm run migration:run",
+    "db:reset": "npm run typeorm schema:drop -- -d src/database/typeorm.config.ts && npm run migration:run"
   },
   "dependencies": {
     "@nestjs/common": "^11.0.1",
@@ -58,6 +61,7 @@
     "@types/passport-jwt": "^4.0.1",
     "@types/supertest": "^6.0.2",
     "@types/swagger-ui-express": "^4.1.8",
+    "cross-env": "^10.1.0",
     "eslint": "^9.18.0",
     "eslint-config-prettier": "^10.0.1",
     "eslint-plugin-prettier": "^5.2.2",

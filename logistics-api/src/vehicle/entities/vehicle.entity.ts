@@ -11,6 +11,13 @@ import {
 } from 'typeorm';
 import { VehicleType } from './vehicle-type.entity';
 import { Shipment } from '../../shipment/entities/shipment.entity';
+import { VehicleMaintenance } from './vehicle-maintenance.entity';
+
+export enum VehicleStatus {
+  AVAILABLE = 'AVAILABLE',
+  BUSY = 'BUSY',
+  MAINTENANCE = 'MAINTENANCE',
+}
 
 @Entity('vehicles')
 export class Vehicle {
@@ -33,16 +40,26 @@ export class Vehicle {
   @Column('decimal', { precision: 10, scale: 2, name: 'volume_capacity' })
   volumeCapacity: number; // in m³
 
-  @Column({ default: true })
+  @Column({
+    type: 'enum',
+    enum: VehicleStatus,
+    default: VehicleStatus.AVAILABLE,
+  })
+  status: VehicleStatus;
+
+  @Column({ name: 'is_available', default: true })
   isAvailable: boolean;
 
   @OneToMany(() => Shipment, (shipment) => shipment.vehicle)
   shipments: Shipment[];
 
-  @CreateDateColumn({ name: 'created_at' })
+  @OneToMany('VehicleMaintenance', 'vehicle')
+  maintenanceLogs: VehicleMaintenance[];
+
+  @CreateDateColumn({ name: 'created_at', type: 'timestamptz' })
   createdAt: Date;
 
-  @UpdateDateColumn({ name: 'updated_at' })
+  @UpdateDateColumn({ name: 'updated_at', type: 'timestamptz' })
   updatedAt: Date;
 
   @DeleteDateColumn({ name: 'deleted_at', type: 'timestamptz', nullable: true })

@@ -30,6 +30,20 @@ export class AuthController {
     if (!user) {
       throw new UnauthorizedException('Invalid credentials');
     }
+
+    if (!user.isEmailVerified) {
+      throw new UnauthorizedException('Please verify your email before logging in.');
+    }
+
     return this.authService.login(user);
+  }
+
+  @HttpCode(HttpStatus.OK)
+  @Post('verify-email')
+  async verifyEmail(@Body('token') token: string) {
+    return {
+      success: await this.authService.verifyEmail(token),
+      message: 'Email successfully verified.',
+    };
   }
 }

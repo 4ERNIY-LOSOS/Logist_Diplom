@@ -8,6 +8,9 @@ import {
   OneToOne,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
+  DeleteDateColumn,
+  Index,
+  Check,
 } from 'typeorm';
 import { Request } from '../../request/entities/request.entity';
 import { Driver } from '../../driver/entities/driver.entity';
@@ -16,8 +19,10 @@ import { ShipmentStatus } from './shipment-status.entity';
 import { LtlShipment } from '../../ltl-shipment/entities/ltl-shipment.entity';
 import { Document } from '../../document/entities/document.entity';
 import { GpsLog } from '../../gps-log/entities/gps-log.entity';
+import { ShipmentMilestone } from './shipment-milestone.entity';
 
 @Entity('shipments')
+@Check(`"planned_pickup_date" <= "planned_delivery_date"`)
 export class Shipment {
   @PrimaryGeneratedColumn('uuid')
   id: string;
@@ -36,27 +41,33 @@ export class Shipment {
   @JoinColumn({ name: 'vehicle_id' })
   vehicle: Vehicle;
 
+  @Index()
   @ManyToOne(() => ShipmentStatus, (status) => status.shipments)
   @JoinColumn({ name: 'status_id' })
   status: ShipmentStatus;
 
   // For LTL shipments
-  @ManyToOne(() => LtlShipment, (ltl) => ltl.shipments, {
+  @ManyToOne('LtlShipment', 'shipments', {
     nullable: true,
     onDelete: 'SET NULL',
   })
   @JoinColumn({ name: 'ltl_shipment_id' })
-  ltlShipment: LtlShipment;
+  ltlShipment: any | null;
 
-  @OneToMany(() => Document, (document) => document.shipment)
-  documents: Document[];
+  @OneToMany('Document', 'shipment')
+  documents: any[];
 
-  @OneToMany(() => GpsLog, (log) => log.shipment)
-  gpsLogs: GpsLog[];
+  @OneToMany('GpsLog', 'shipment')
+  gpsLogs: any[];
 
+  @OneToMany('ShipmentMilestone', 'shipment')
+  milestones: any[];
+
+  @Index()
   @Column({ type: 'timestamptz', name: 'planned_pickup_date' })
   plannedPickupDate: Date;
 
+  @Index()
   @Column({ type: 'timestamptz', name: 'planned_delivery_date' })
   plannedDeliveryDate: Date;
 
@@ -71,4 +82,7 @@ export class Shipment {
 
   @UpdateDateColumn({ type: 'timestamptz', name: 'updated_at' })
   updatedAt: Date;
+
+  @DeleteDateColumn({ type: 'timestamptz', name: 'deleted_at', nullable: true })
+  deletedAt: Date;
 }

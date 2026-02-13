@@ -3,6 +3,7 @@ import {
   InternalServerErrorException,
   NotFoundException,
   ForbiddenException,
+  Logger,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -19,6 +20,7 @@ import { Shipment } from '../shipment/entities/shipment.entity'; // Import Shipm
 @Injectable()
 export class DocumentService {
   private readonly uploadDir: string;
+  private readonly logger = new Logger(DocumentService.name);
 
   constructor(
     @InjectRepository(Document)
@@ -29,7 +31,9 @@ export class DocumentService {
     private userService: UserService,
   ) {
     this.uploadDir = this.configService.get<string>('UPLOAD_DIR', './uploads');
-    fs.mkdir(this.uploadDir, { recursive: true }).catch(console.error);
+    fs.mkdir(this.uploadDir, { recursive: true }).catch((err) =>
+      this.logger.error(`Failed to create upload directory: ${err.message}`),
+    );
   }
 
   async create(
@@ -53,7 +57,7 @@ export class DocumentService {
 
       return this.documentRepository.save(newDocument);
     } catch (error) {
-      console.error('Error saving document:', error);
+      this.logger.error(`Error saving document: ${error.message}`, error.stack);
       throw new InternalServerErrorException('Failed to save document');
     }
   }
@@ -103,7 +107,10 @@ export class DocumentService {
       await fs.unlink(filePath);
       await this.documentRepository.remove(document);
     } catch (error) {
-      console.error('Error deleting document:', error);
+      this.logger.error(
+        `Error deleting document: ${error.message}`,
+        error.stack,
+      );
       throw new InternalServerErrorException('Failed to delete document');
     }
   }

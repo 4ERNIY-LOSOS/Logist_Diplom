@@ -91,6 +91,16 @@ export class UserService {
     });
   }
 
+  async findOneByVerificationToken(token: string): Promise<User | null> {
+    return this.userRepository.findOne({
+      where: { emailVerificationToken: token },
+    });
+  }
+
+  async updateRaw(id: string, data: Partial<User>): Promise<void> {
+    await this.userRepository.update(id, data);
+  }
+
   async findMe(userId: string): Promise<User> {
     return this.findOne(userId);
   }

@@ -16,6 +16,7 @@ import { AuthGuard } from '@nestjs/passport';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { RoleName } from '../auth/enums/role-name.enum';
+import { LtlShipmentStatus } from './enums/ltl-shipment-status.enum';
 
 @UseGuards(AuthGuard('jwt'), RolesGuard)
 @Controller('ltl-shipment')
@@ -38,6 +39,15 @@ export class LtlShipmentController {
   @Roles(RoleName.ADMIN, RoleName.LOGISTICIAN)
   findOne(@Param('id') id: string) {
     return this.ltlShipmentService.findOne(id);
+  }
+
+  @Patch(':id/status')
+  @Roles(RoleName.ADMIN, RoleName.LOGISTICIAN)
+  updateStatus(
+    @Param('id') id: string,
+    @Body('status') status: LtlShipmentStatus,
+  ) {
+    return this.ltlShipmentService.updateStatus(id, status);
   }
 
   @Patch(':id')

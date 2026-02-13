@@ -17,6 +17,12 @@ import { ShipmentStatus } from './entities/shipment-status.entity';
 import { RequestStatus } from '../request/entities/request-status.entity';
 import { UserService } from '../user/user.service'; // Import UserService
 import { RoleName } from '../auth/enums/role-name.enum'; // Import RoleName
+import { Document, DocumentType } from '../document/entities/document.entity';
+import { DriverStatus } from '../driver/entities/driver.entity';
+import { VehicleStatus } from '../vehicle/entities/vehicle.entity';
+import { ShipmentMilestone, MilestoneType } from './entities/shipment-milestone.entity';
+import { SchedulingService } from '../scheduling/scheduling.service';
+import { FinanceService } from '../finance/finance.service';
 
 @Injectable()
 export class ShipmentService {
@@ -34,13 +40,19 @@ export class ShipmentService {
     @InjectRepository(RequestStatus)
     private requestStatusRepository: Repository<RequestStatus>,
     private entityManager: EntityManager,
-    private userService: UserService, // Inject UserService
+    private userService: UserService,
+    private schedulingService: SchedulingService,
+    private financeService: FinanceService,
   ) {}
 
   async createFromRequest(
     createShipmentDto: CreateShipmentDto,
   ): Promise<Shipment> {
-    const { requestId, driverId, vehicleId, ...rest } = createShipmentDto;
+    const { requestId, driverId, vehicleId, plannedPickupDate, plannedDeliveryDate, ...rest } = createShipmentDto;
+
+    // Check scheduling conflicts
+    await this.schedulingService.checkVehicleAvailability(vehicleId, new Date(plannedPickupDate), new Date(plannedDeliveryDate));
+    await this.schedulingService.checkDriverAvailability(driverId, new Date(plannedPickupDate), new Date(plannedDeliveryDate));
 
     return this.entityManager.transaction(
       async (transactionalEntityManager) => {
@@ -105,7 +117,24 @@ export class ShipmentService {
         }
 
         driver.isAvailable = false;
+        driver.status = DriverStatus.BUSY;
+        // Validate vehicle capacity
+        let totalWeight = 0;
+        let totalVolume = 0;
+        request.cargos.forEach(cargo => {
+          totalWeight += Number(cargo.weight);
+          totalVolume += Number(cargo.volume);
+        });
+
+        if (totalWeight > vehicle.payloadCapacity) {
+          throw new BadRequestException(`Vehicle payload capacity exceeded. Cargo weight: ${totalWeight}, Vehicle capacity: ${vehicle.payloadCapacity}`);
+        }
+        if (totalVolume > vehicle.volumeCapacity) {
+          throw new BadRequestException(`Vehicle volume capacity exceeded. Cargo volume: ${totalVolume}, Vehicle capacity: ${vehicle.volumeCapacity}`);
+        }
+
         vehicle.isAvailable = false;
+        vehicle.status = VehicleStatus.BUSY;
         await transactionalEntityManager.save(driver);
         await transactionalEntityManager.save(vehicle);
 
@@ -123,6 +152,23 @@ export class ShipmentService {
         return transactionalEntityManager.save(newShipment);
       },
     );
+  }
+
+  async addMilestone(
+    shipmentId: string,
+    type: MilestoneType,
+    details?: { location?: string; latitude?: number; longitude?: number; notes?: string },
+  ): Promise<ShipmentMilestone> {
+    const shipment = await this.shipmentRepository.findOne({ where: { id: shipmentId } });
+    if (!shipment) throw new NotFoundException(`Shipment ${shipmentId} not found`);
+
+    const milestone = this.entityManager.create(ShipmentMilestone, {
+      shipment,
+      type,
+      ...details,
+    });
+
+    return this.entityManager.save(milestone);
   }
 
   async updateStatus(
@@ -175,6 +221,19 @@ export class ShipmentService {
 
         shipment.status = newStatus;
 
+        // Record Milestone based on Status change
+        let milestoneType: MilestoneType | null = null;
+        if (newStatusName === 'В пути') milestoneType = MilestoneType.IN_TRANSIT;
+        if (newStatusName === 'Доставлена') milestoneType = MilestoneType.DELIVERED;
+
+        if (milestoneType) {
+            const milestone = transactionalEntityManager.create(ShipmentMilestone, {
+                shipment,
+                type: milestoneType,
+            });
+            await transactionalEntityManager.save(milestone);
+        }
+
         // Release resources if the shipment is completed or cancelled
         if (
           newStatus.name === 'Доставлена' ||
@@ -182,21 +241,42 @@ export class ShipmentService {
         ) {
           if (shipment.driver) {
             shipment.driver.isAvailable = true;
+            shipment.driver.status = DriverStatus.AVAILABLE;
             await transactionalEntityManager.save(shipment.driver);
           }
           if (shipment.vehicle) {
             shipment.vehicle.isAvailable = true;
+            shipment.vehicle.status = VehicleStatus.AVAILABLE;
             await transactionalEntityManager.save(shipment.vehicle);
           }
         }
 
         // Handle specific logic for 'Delivered'
         if (newStatus.name === 'Доставлена') {
+          // 1. Check for POD document
+          const podDocument = await transactionalEntityManager.findOne(Document, {
+            where: {
+              shipment: { id: shipment.id },
+              type: DocumentType.PROOF_OF_DELIVERY,
+            },
+          });
+
+          if (!podDocument) {
+            throw new BadRequestException(
+              'Cannot mark shipment as delivered without a Proof of Delivery (POD) document attached.',
+            );
+          }
+
           shipment.actualDeliveryDate = new Date();
-          if (shipment.request && shipment.request.finalCost === null) {
+          if (shipment.request && (shipment.request.finalCost === null || shipment.request.finalCost === undefined)) {
             shipment.request.finalCost = shipment.request.preliminaryCost;
             await transactionalEntityManager.save(shipment.request);
           }
+
+          // 2. Generate Invoice
+          // Note: Using await here inside transaction.
+          // In a real system, we might trigger this via an event to keep transaction short.
+          await this.financeService.generateInvoiceForShipment(shipment);
         }
 
         // Handle specific logic for 'Cancelled'
@@ -284,10 +364,12 @@ export class ShipmentService {
         // 1. Make driver and vehicle available again
         if (shipment.driver) {
           shipment.driver.isAvailable = true;
+          shipment.driver.status = DriverStatus.AVAILABLE;
           await transactionalEntityManager.save(shipment.driver);
         }
         if (shipment.vehicle) {
           shipment.vehicle.isAvailable = true;
+          shipment.vehicle.status = VehicleStatus.AVAILABLE;
           await transactionalEntityManager.save(shipment.vehicle);
         }
 
@@ -309,7 +391,7 @@ export class ShipmentService {
         }
 
         // 3. Remove the shipment
-        await transactionalEntityManager.remove(shipment);
+        await transactionalEntityManager.softRemove(shipment);
       },
     );
   }
