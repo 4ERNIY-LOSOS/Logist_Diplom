@@ -8,14 +8,34 @@ import { Company } from '../company/entities/company.entity';
 import { Driver } from '../driver/entities/driver.entity';
 import { Vehicle } from '../vehicle/entities/vehicle.entity';
 import { Tariff } from '../tariff/entities/tariff.entity';
+import { Request as CargoRequest } from '../request/entities/request.entity';
+import { Shipment } from '../shipment/entities/shipment.entity';
+import { Cargo } from '../cargo/entities/cargo.entity';
+import { Address } from '../address/entities/address.entity';
+import { CargoType } from '../cargo/entities/cargo-type.entity';
+import { CargoRequirement } from '../cargo/entities/cargo-requirement.entity';
+import { ShipmentMilestone } from '../shipment/entities/shipment-milestone.entity';
+import { LtlShipment } from '../ltl-shipment/entities/ltl-shipment.entity';
+import { ShipmentRouteStop } from '../ltl-shipment/entities/shipment-route-stop.entity';
+import { Warehouse } from '../warehouse/entities/warehouse.entity';
+import { Invoice } from '../finance/entities/invoice.entity';
+import { AuditLog } from '../audit-log/entities/audit-log.entity';
+import { GpsLog } from '../gps-log/entities/gps-log.entity';
+import { Notification } from '../notification/entities/notification.entity';
+import { VehicleType } from '../vehicle/entities/vehicle-type.entity';
 import * as bcrypt from 'bcrypt';
 import { dataSourceOptions } from './typeorm.config';
 
 async function seed() {
   const dataSource = new DataSource({
     ...dataSourceOptions,
-    entities: [Role, RequestStatus, ShipmentStatus, User, Company, Driver, Vehicle, Tariff],
-    synchronize: true, // For seeding we want it to create tables if they don't exist
+    entities: [
+        Role, RequestStatus, ShipmentStatus, User, Company, Driver, Vehicle, Tariff,
+        CargoRequest, Shipment, Cargo, Address, CargoType, CargoRequirement,
+        ShipmentMilestone, LtlShipment, ShipmentRouteStop, Warehouse,
+        Invoice, AuditLog, GpsLog, Notification, VehicleType
+    ],
+    synchronize: true,
   });
 
   await dataSource.initialize();
@@ -63,7 +83,12 @@ async function seed() {
   // 4. Companies
   let companyA = await companyRepo.findOneBy({ name: 'ООО Ромашка' });
   if (!companyA) {
-    companyA = await companyRepo.save({ name: 'ООО Ромашка', email: 'info@romashka.ru', phone: '123456789' });
+    companyA = await companyRepo.save({
+        name: 'ООО Ромашка',
+        email: 'info@romashka.ru',
+        phone: '123456789',
+        taxId: '1234567890'
+    });
     console.log('Created company A');
   }
 
@@ -115,8 +140,8 @@ async function seed() {
   const vehiclesCount = await vehicleRepo.count();
   if (vehiclesCount === 0) {
     await vehicleRepo.save([
-      { model: 'KAMAZ-54901', licensePlate: 'A111AA77', capacityKg: 20000, volumeM3: 80, isAvailable: true },
-      { model: 'GAZelle NEXT', licensePlate: 'B222BB77', capacityKg: 1500, volumeM3: 12, isAvailable: true },
+      { model: 'KAMAZ-54901', licensePlate: 'A111AA77', payloadCapacity: 20000, volumeCapacity: 80, isAvailable: true },
+      { model: 'GAZelle NEXT', licensePlate: 'B222BB77', payloadCapacity: 1500, volumeCapacity: 12, isAvailable: true },
     ]);
     console.log('Created vehicles');
   }

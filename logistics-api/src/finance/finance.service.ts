@@ -2,7 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Invoice, InvoiceStatus } from './entities/invoice.entity';
-import { Shipment } from '../../shipment/entities/shipment.entity';
+import { Shipment } from '../shipment/entities/shipment.entity';
 
 @Injectable()
 export class FinanceService {
