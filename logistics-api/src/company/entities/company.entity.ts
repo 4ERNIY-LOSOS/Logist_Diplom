@@ -26,7 +26,7 @@ export class Company {
   @Column({ nullable: true })
   email: string;
 
-  @Column({ default: true })
+  @Column({ name: 'is_active', default: true })
   isActive: boolean;
 
   @Exclude()

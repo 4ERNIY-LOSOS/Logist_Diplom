@@ -35,7 +35,7 @@ export class Tariff {
   @Column('decimal', { precision: 10, scale: 2, name: 'base_fee', default: 0 })
   baseFee: number;
 
-  @Column({ default: true })
+  @Column({ name: 'is_active', default: true })
   isActive: boolean;
 
   @CreateDateColumn({ name: 'created_at' })

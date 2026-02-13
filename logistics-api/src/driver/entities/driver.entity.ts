@@ -39,7 +39,7 @@ export class Driver {
   })
   status: DriverStatus;
 
-  @Column({ default: true })
+  @Column({ name: 'is_available', default: true })
   isAvailable: boolean;
 
   @OneToMany(() => Shipment, (shipment) => shipment.driver)

@@ -16,12 +16,12 @@ export class Warehouse {
   @JoinColumn({ name: 'address_id' })
   address: Address;
 
-  @Column('decimal', { precision: 12, scale: 2, default: 0 })
+  @Column('decimal', { name: 'capacity_weight', precision: 12, scale: 2, default: 0 })
   capacityWeight: number;
 
-  @Column('decimal', { precision: 12, scale: 2, default: 0 })
+  @Column('decimal', { name: 'capacity_volume', precision: 12, scale: 2, default: 0 })
   capacityVolume: number;
 
-  @Column({ default: true })
+  @Column({ name: 'is_active', default: true })
   isActive: boolean;
 }

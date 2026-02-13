@@ -24,7 +24,7 @@ export class Invoice {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column({ unique: true })
+  @Column({ name: 'invoice_number', unique: true })
   invoiceNumber: string;
 
   @OneToOne(() => Shipment, { onDelete: 'CASCADE' })
@@ -38,7 +38,7 @@ export class Invoice {
   @Column('decimal', { precision: 12, scale: 2 })
   amount: number;
 
-  @Column('decimal', { precision: 12, scale: 2, default: 0 })
+  @Column('decimal', { name: 'tax_amount', precision: 12, scale: 2, default: 0 })
   taxAmount: number;
 
   @Column({

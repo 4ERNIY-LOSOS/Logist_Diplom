@@ -12,7 +12,7 @@ export class CargoType {
   @Column({ nullable: true })
   description: string;
 
-  @Column('decimal', { precision: 5, scale: 2, default: 1.0 })
+  @Column('decimal', { name: 'base_multiplier', precision: 5, scale: 2, default: 1.0 })
   baseMultiplier: number; // Multiplier for pricing
 
   @OneToMany('Cargo', 'cargoType')

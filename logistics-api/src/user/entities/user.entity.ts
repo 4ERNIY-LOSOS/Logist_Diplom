@@ -38,7 +38,7 @@ export class User {
   @Column({ nullable: true })
   phone: string;
 
-  @Column({ default: true })
+  @Column({ name: 'is_active', default: true })
   isActive: boolean;
 
   @Column({ name: 'is_email_verified', default: false })

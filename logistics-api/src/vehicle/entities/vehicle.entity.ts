@@ -47,7 +47,7 @@ export class Vehicle {
   })
   status: VehicleStatus;
 
-  @Column({ default: true })
+  @Column({ name: 'is_available', default: true })
   isAvailable: boolean;
 
   @OneToMany(() => Shipment, (shipment) => shipment.vehicle)
@@ -56,10 +56,10 @@ export class Vehicle {
   @OneToMany('VehicleMaintenance', 'vehicle')
   maintenanceLogs: VehicleMaintenance[];
 
-  @CreateDateColumn({ name: 'created_at' })
+  @CreateDateColumn({ name: 'created_at', type: 'timestamptz' })
   createdAt: Date;
 
-  @UpdateDateColumn({ name: 'updated_at' })
+  @UpdateDateColumn({ name: 'updated_at', type: 'timestamptz' })
   updatedAt: Date;
 
   @DeleteDateColumn({ name: 'deleted_at', type: 'timestamptz', nullable: true })
