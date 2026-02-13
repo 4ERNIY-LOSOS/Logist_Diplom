@@ -1,63 +1,85 @@
 # Logistics System - Setup & Logic Guide
 
-## 1. Database Initialization
+## 🚀 Quick Start (Running the Project)
 
-Since the project uses TypeORM, you have two ways to initialize the database:
+Follow these steps to get the system up and running from scratch.
 
-### Option A: Automatic (Recommended for first run)
-The `npm run seed` command is configured to automatically synchronize the schema and populate the database with initial data (Roles, Admin, Test Company, Drivers, Vehicles).
-
+### 1. Start the Database
+Ensure you have Docker installed and running. This will start the PostgreSQL database.
 ```bash
-cd logistics-api
-npm run seed
+docker compose up -d
 ```
 
-### Option B: Migrations
-If you prefer using migrations:
-1. Ensure your database is running (`docker compose up -d`).
-2. Generate the initial migration based on the current entities:
-   ```bash
-   npm run migration:generate -- src/database/migrations/InitialSchema
-   ```
-3. Run the migration:
-   ```bash
-   npm run migration:run
-   ```
+### 2. Initialize the Backend
+Open a new terminal and go to the API directory.
+```bash
+cd logistics-api
+npm install
+```
+
+### 3. Run Database Migrations
+This command will create all tables, constraints, and populate the database with initial data (Admin user, Roles, Statuses, Drivers, Vehicles, etc.).
+```bash
+npm run db:setup
+```
+*Note: If you ever need to wipe the database and start over, use `npm run db:reset`.*
+
+### 4. Start the Backend API
+```bash
+npm run start:dev
+```
+The API will be available at `http://localhost:3000`. Swagger documentation can be found at `http://localhost:3000/api`.
+
+### 5. Start the Frontend (Client)
+Open a new terminal, go to the client directory, and start the development server.
+```bash
+cd client
+npm install --legacy-peer-deps
+npm run dev
+```
+The frontend will be available at `http://localhost:5173`.
 
 ---
 
-## 2. Key Business Logic & Features
+## 🔑 Default Credentials
 
-### 🚀 LTL Shipment Consolidation
-- **Logic**: You can group multiple `Shipments` into one `LTL Shipment`.
-- **Status Flow**: When the LTL Shipment moves to "In Transit", all linked shipments automatically update their status.
-- **Constraints**: A shipment cannot be added to an LTL load if it's already part of another one or if its status is not "Planned".
-
-### 🛡️ Proof of Delivery (POD) Enforcement
-- **Logic**: A shipment **cannot** be marked as "Delivered" until a document of type `PROOF_OF_DELIVERY` is uploaded.
-- **Verification**: The system checks for the existence of this document in the database before allowing the status transition.
-
-### 💰 Pricing Engine
-- **Dynamic Calculation**: Costs are calculated based on:
-  - Base Fee (from active Tariff)
-  - Distance (Distance * Cost per Km)
-  - Weight & Volume (Total Weight * Cost per Kg + Total Volume * Cost per M3)
-  - **Cargo Type Surcharge**: Multipliers applied for Hazardous or Cold Chain cargo.
-  - **Special Requirements**: Flat surcharges for specific handling needs.
-
-### 📅 Resource Scheduling & Availability
-- **Logic**: Prevent double-booking.
-- **Validation**: When creating a shipment, the system checks if the selected Driver and Vehicle are available during the planned time window.
-- **Maintenance**: Vehicles scheduled for maintenance are automatically excluded from availability.
-
-### 📊 KPI & Analytics
-- **On-Time Delivery (OTD)**: Calculated by comparing `actualDeliveryDate` with `plannedDeliveryDate`.
-- **Vehicle Utilization**: Percentage of the fleet currently assigned to active shipments.
-- **Financials**: Automatic `Invoice` generation upon successful delivery.
+- **Admin Account**:
+  - Username: `admin`
+  - Password: `admin123`
+- **Client Account**:
+  - Username: `client`
+  - Password: `client123`
 
 ---
 
-## 3. Security Measures
-- **Data Leakage Prevention**: All API responses are filtered. Sensitive fields like `password` or `verificationToken` are marked with `@Exclude()` and removed by the global `ClassSerializerInterceptor`.
-- **Multitenancy**: Clients are restricted to their own company's data via service-level authorization checks.
-- **Audit Logs**: Every state-changing action (POST/PATCH/DELETE) is recorded in the `audit_logs` table with "before/after" details.
+## 🛠️ Key Commands Summary (logistics-api)
+
+| Command | Description |
+|---------|-------------|
+| `npm run db:setup` | Runs all migrations and seeds initial data. |
+| `npm run db:reset` | Drops the entire schema and reruns all migrations. **(DANGER: Clears all data)** |
+| `npm run start:dev` | Starts the NestJS server in watch mode. |
+| `npm run seed` | (Legacy) Seeds data via TypeORM synchronize. Use `db:setup` instead. |
+
+---
+
+## 🏗️ Core Business Logic & Features
+
+### 📦 LTL Shipment Consolidation
+- **Logic**: Group multiple shipments into a single "Less Than Truckload" unit.
+- **Automation**: Updating an LTL Shipment's status propagates to all child shipments.
+- **Constraints**: Enforces weight and volume limits for the assigned vehicle.
+
+### 📜 Proof of Delivery (POD)
+- **Logic**: Strict enforcement. A shipment **cannot** be marked as "Delivered" until a document of type `PROOF_OF_DELIVERY` is uploaded.
+
+### 💳 Pricing Engine
+- **Calculations**: Real-time cost estimation based on distance, weight, volume, cargo type surcharges (Hazardous, Cold Chain), and special requirements.
+
+### 📡 Live Tracking & GPS
+- **Simulation**: While in transit, shipments automatically "generate" GPS movements to simulate vehicle progress on the map.
+
+### 🔒 Security & Privacy
+- **Audit Logs**: Every state-changing request (POST, PATCH, DELETE) is logged with before/after state comparison.
+- **Serialization**: Sensitive data (passwords, tokens) is never returned in API responses.
+- **Multi-tenancy**: Client users can only see and manage requests belonging to their company.
