@@ -48,17 +48,17 @@ export class User {
   @Column({ name: 'email_verification_token', nullable: true })
   emailVerificationToken: string | null;
 
-  @ManyToOne(() => Role, (role) => role.users)
+  @ManyToOne('Role', 'users')
   @JoinColumn({ name: 'role_id' })
-  role: Role;
+  role: any;
 
   @Index()
-  @ManyToOne(() => Company, (company) => company.users, {
+  @ManyToOne('Company', 'users', {
     nullable: true,
     onDelete: 'SET NULL',
   })
   @JoinColumn({ name: 'company_id' })
-  company: Company;
+  company: any;
 
   @CreateDateColumn({ type: 'timestamptz', name: 'created_at' })
   createdAt: Date;

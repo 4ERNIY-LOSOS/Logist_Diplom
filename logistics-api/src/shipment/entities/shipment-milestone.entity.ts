@@ -26,9 +26,9 @@ export class ShipmentMilestone {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @ManyToOne(() => Shipment, (shipment) => shipment.milestones, { onDelete: 'CASCADE' })
+  @ManyToOne('Shipment', 'milestones', { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'shipment_id' })
-  shipment: Shipment;
+  shipment: any;
 
   @Column({
     type: 'enum',

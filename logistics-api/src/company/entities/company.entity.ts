@@ -30,8 +30,8 @@ export class Company {
   isActive: boolean;
 
   @Exclude()
-  @OneToMany(() => User, (user) => user.company)
-  users: User[];
+  @OneToMany('User', 'company')
+  users: any[];
 
   @CreateDateColumn({ type: 'timestamptz', name: 'created_at' })
   createdAt: Date;

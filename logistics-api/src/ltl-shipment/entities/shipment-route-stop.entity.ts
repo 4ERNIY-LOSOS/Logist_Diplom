@@ -13,9 +13,9 @@ export class ShipmentRouteStop {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @ManyToOne(() => LtlShipment, (ltl) => ltl.routeStops, { onDelete: 'CASCADE' })
+  @ManyToOne('LtlShipment', 'routeStops', { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'ltl_shipment_id' })
-  ltlShipment: LtlShipment;
+  ltlShipment: any;
 
   @ManyToOne(() => Warehouse)
   @JoinColumn({ name: 'warehouse_id' })

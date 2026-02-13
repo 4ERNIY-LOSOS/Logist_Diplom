@@ -19,9 +19,9 @@ export class VehicleMaintenance {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @ManyToOne(() => Vehicle, (v) => v.maintenanceLogs, { onDelete: 'CASCADE' })
+  @ManyToOne('Vehicle', 'maintenanceLogs', { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'vehicle_id' })
-  vehicle: Vehicle;
+  vehicle: any;
 
   @Column({
     type: 'enum',

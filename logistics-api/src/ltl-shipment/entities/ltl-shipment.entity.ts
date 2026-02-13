@@ -25,10 +25,10 @@ export class LtlShipment {
   })
   status: LtlShipmentStatus;
 
-  @OneToMany(() => Shipment, (shipment) => shipment.ltlShipment)
+  @OneToMany('Shipment', 'ltlShipment')
   shipments: Shipment[];
 
-  @OneToMany(() => ShipmentRouteStop, (stop) => stop.ltlShipment, { cascade: true })
+  @OneToMany('ShipmentRouteStop', 'ltlShipment', { cascade: true })
   routeStops: ShipmentRouteStop[];
 
   @Column({ type: 'timestamptz', name: 'departure_date' })

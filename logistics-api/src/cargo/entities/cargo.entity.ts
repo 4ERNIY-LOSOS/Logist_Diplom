@@ -34,10 +34,10 @@ export class Cargo {
   @Column('decimal', { precision: 10, scale: 2 })
   volume: number; // in m³
 
-  @ManyToOne(() => CargoType, (type) => type.cargos)
+  @ManyToOne('CargoType', 'cargos')
   @JoinColumn({ name: 'cargo_type_id' })
-  cargoType: CargoType;
+  cargoType: any;
 
-  @OneToMany(() => CargoRequirement, (req) => req.cargo, { cascade: true })
-  requirements: CargoRequirement[];
+  @OneToMany('CargoRequirement', 'cargo', { cascade: true })
+  requirements: any[];
 }

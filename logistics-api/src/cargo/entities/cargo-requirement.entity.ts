@@ -15,6 +15,6 @@ export class CargoRequirement {
   @Column('decimal', { precision: 10, scale: 2, default: 0 })
   surchargeAmount: number; // Flat fee for this requirement
 
-  @ManyToOne(() => Cargo, (cargo) => cargo.requirements, { onDelete: 'CASCADE' })
-  cargo: Cargo;
+  @ManyToOne('Cargo', 'requirements', { onDelete: 'CASCADE' })
+  cargo: any;
 }

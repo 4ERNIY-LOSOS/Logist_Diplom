@@ -23,6 +23,7 @@ import { AuditLog } from '../audit-log/entities/audit-log.entity';
 import { GpsLog } from '../gps-log/entities/gps-log.entity';
 import { Notification } from '../notification/entities/notification.entity';
 import { VehicleType } from '../vehicle/entities/vehicle-type.entity';
+import { VehicleMaintenance } from '../vehicle/entities/vehicle-maintenance.entity';
 import * as bcrypt from 'bcrypt';
 import { dataSourceOptions } from './typeorm.config';
 
@@ -33,7 +34,7 @@ async function seed() {
         Role, RequestStatus, ShipmentStatus, User, Company, Driver, Vehicle, Tariff,
         CargoRequest, Shipment, Cargo, Address, CargoType, CargoRequirement,
         ShipmentMilestone, LtlShipment, ShipmentRouteStop, Warehouse,
-        Invoice, AuditLog, GpsLog, Notification, VehicleType
+        Invoice, AuditLog, GpsLog, Notification, VehicleType, VehicleMaintenance
     ],
     synchronize: true,
   });

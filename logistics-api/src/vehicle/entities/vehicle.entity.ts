@@ -53,7 +53,7 @@ export class Vehicle {
   @OneToMany(() => Shipment, (shipment) => shipment.vehicle)
   shipments: Shipment[];
 
-  @OneToMany(() => VehicleMaintenance, (m) => m.vehicle)
+  @OneToMany('VehicleMaintenance', 'vehicle')
   maintenanceLogs: VehicleMaintenance[];
 
   @CreateDateColumn({ name: 'created_at' })
