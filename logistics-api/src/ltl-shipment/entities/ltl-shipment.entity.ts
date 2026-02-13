@@ -7,6 +7,7 @@ import {
   UpdateDateColumn,
 } from 'typeorm';
 import { Shipment } from '../../shipment/entities/shipment.entity';
+import { LtlShipmentStatus } from '../enums/ltl-shipment-status.enum';
 
 @Entity('ltl_shipments')
 export class LtlShipment {
@@ -15,6 +16,13 @@ export class LtlShipment {
 
   @Column({ name: 'voyage_code', unique: true })
   voyageCode: string;
+
+  @Column({
+    type: 'enum',
+    enum: LtlShipmentStatus,
+    default: LtlShipmentStatus.CONSOLIDATING,
+  })
+  status: LtlShipmentStatus;
 
   @OneToMany(() => Shipment, (shipment) => shipment.ltlShipment)
   shipments: Shipment[];

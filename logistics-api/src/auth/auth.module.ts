@@ -14,10 +14,16 @@ import { JwtStrategy } from './jwt.strategy'; // Add this import
     JwtModule.registerAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
-      useFactory: async (configService: ConfigService) => ({
-        secret: configService.get<string>('JWT_SECRET') || 'superSecretKey',
-        signOptions: { expiresIn: '1h' },
-      }),
+      useFactory: async (configService: ConfigService) => {
+        const secret = configService.get<string>('JWT_SECRET');
+        if (!secret) {
+          throw new Error('JWT_SECRET is not set in the environment variables. Application cannot start.');
+        }
+        return {
+          secret: secret,
+          signOptions: { expiresIn: '1h' },
+        };
+      },
     }),
   ],
   providers: [AuthService, JwtStrategy], // Add JwtStrategy here

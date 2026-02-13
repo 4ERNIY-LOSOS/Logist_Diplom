@@ -46,7 +46,7 @@ export class ShipmentService {
       async (transactionalEntityManager) => {
         const request = await transactionalEntityManager.findOne(Request, {
           where: { id: requestId },
-          relations: ['shipment'],
+          relations: ['shipment', 'cargos'],
         });
         if (!request) {
           throw new NotFoundException(
@@ -133,7 +133,7 @@ export class ShipmentService {
       async (transactionalEntityManager) => {
         const shipment = await transactionalEntityManager.findOne(Shipment, {
           where: { id },
-          relations: ['driver', 'vehicle', 'status', 'request', 'request.preliminaryCost', 'request.finalCost'], // Load request relations
+          relations: ['driver', 'vehicle', 'status', 'request'],
         });
 
         if (!shipment) {
@@ -156,9 +156,10 @@ export class ShipmentService {
         const currentStatusName = shipment.status.name;
         const newStatusName = newStatus.name;
 
+        // More flexible transitions: allow cancellation from 'In transit' as well
         const validTransitions: Record<string, string[]> = {
           Запланирована: ['В пути', 'Отменена'],
-          'В пути': ['Доставлена'],
+          'В пути': ['Доставлена', 'Отменена'], // Allow cancellation
           Доставлена: [],
           Отменена: [],
         };
@@ -174,23 +175,43 @@ export class ShipmentService {
 
         shipment.status = newStatus;
 
-        if (newStatus.name === 'Доставлена') {
-          shipment.actualDeliveryDate = new Date();
-
+        // Release resources if the shipment is completed or cancelled
+        if (
+          newStatus.name === 'Доставлена' ||
+          newStatus.name === 'Отменена'
+        ) {
           if (shipment.driver) {
             shipment.driver.isAvailable = true;
             await transactionalEntityManager.save(shipment.driver);
           }
-
           if (shipment.vehicle) {
             shipment.vehicle.isAvailable = true;
             await transactionalEntityManager.save(shipment.vehicle);
           }
+        }
 
-          // Auto-calculate finalCost for the associated request
+        // Handle specific logic for 'Delivered'
+        if (newStatus.name === 'Доставлена') {
+          shipment.actualDeliveryDate = new Date();
           if (shipment.request && shipment.request.finalCost === null) {
             shipment.request.finalCost = shipment.request.preliminaryCost;
             await transactionalEntityManager.save(shipment.request);
+          }
+        }
+
+        // Handle specific logic for 'Cancelled'
+        if (newStatus.name === 'Отменена') {
+          if (shipment.request) {
+            const newRequestStatus = await transactionalEntityManager.findOne(
+              RequestStatus,
+              {
+                where: { name: 'Новая' },
+              },
+            );
+            if (newRequestStatus) {
+              shipment.request.status = newRequestStatus;
+              await transactionalEntityManager.save(shipment.request);
+            }
           }
         }
 

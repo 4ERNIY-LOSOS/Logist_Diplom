@@ -35,17 +35,16 @@ export class Request {
   @JoinColumn({ name: 'status_id' })
   status: RequestStatus;
 
-  @ManyToOne(() => Address, { cascade: true, eager: true })
+  @ManyToOne(() => Address, { cascade: true })
   @JoinColumn({ name: 'pickup_address_id' })
   pickupAddress: Address;
 
-  @ManyToOne(() => Address, { cascade: true, eager: true })
+  @ManyToOne(() => Address, { cascade: true })
   @JoinColumn({ name: 'delivery_address_id' })
   deliveryAddress: Address;
 
   @OneToMany(() => Cargo, (cargo) => cargo.request, {
     cascade: true,
-    eager: true,
   })
   cargos: Cargo[];
 

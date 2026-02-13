@@ -1,6 +1,10 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ConflictException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, Not } from 'typeorm';
 import { CreateDriverDto } from './dto/create-driver.dto';
 import { UpdateDriverDto } from './dto/update-driver.dto';
 import { Driver } from './entities/driver.entity';
@@ -12,16 +16,40 @@ export class DriverService {
     private driverRepository: Repository<Driver>,
   ) {}
 
-  create(createDriverDto: CreateDriverDto): Promise<Driver> {
+  async create(createDriverDto: CreateDriverDto): Promise<Driver> {
+    const { licenseNumber } = createDriverDto;
+    const existingDriver = await this.driverRepository.findOne({
+      where: { licenseNumber },
+    });
+    if (existingDriver) {
+      throw new ConflictException(
+        `Driver with license number "${licenseNumber}" already exists.`,
+      );
+    }
     const driver = this.driverRepository.create(createDriverDto);
     return this.driverRepository.save(driver);
   }
 
-  findAll(isAvailable?: boolean): Promise<Driver[]> {
+  async findAll(options: {
+    isAvailable?: boolean;
+    page?: number;
+    limit?: number;
+  }): Promise<{ data: Driver[]; total: number }> {
+    const { isAvailable, page = 1, limit = 10 } = options;
+    const skip = (page - 1) * limit;
+
+    const where: any = {};
     if (isAvailable !== undefined) {
-      return this.driverRepository.find({ where: { isAvailable } });
+      where.isAvailable = isAvailable;
     }
-    return this.driverRepository.find();
+
+    const [data, total] = await this.driverRepository.findAndCount({
+      where,
+      take: limit,
+      skip,
+    });
+
+    return { data, total };
   }
 
   async findOne(id: string): Promise<Driver> {
@@ -34,12 +62,30 @@ export class DriverService {
 
   async update(id: string, updateDriverDto: UpdateDriverDto): Promise<Driver> {
     const driver = await this.findOne(id);
+
+    if (
+      updateDriverDto.licenseNumber &&
+      updateDriverDto.licenseNumber !== driver.licenseNumber
+    ) {
+      const existingDriver = await this.driverRepository.findOne({
+        where: {
+          licenseNumber: updateDriverDto.licenseNumber,
+          id: Not(id),
+        },
+      });
+      if (existingDriver) {
+        throw new ConflictException(
+          `Driver with license number "${updateDriverDto.licenseNumber}" already exists.`,
+        );
+      }
+    }
+
     Object.assign(driver, updateDriverDto);
     return this.driverRepository.save(driver);
   }
 
   async remove(id: string): Promise<void> {
-    const result = await this.driverRepository.delete(id);
+    const result = await this.driverRepository.softDelete(id);
     if (result.affected === 0) {
       throw new NotFoundException(`Driver with ID "${id}" not found`);
     }

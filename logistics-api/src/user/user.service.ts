@@ -12,7 +12,6 @@ import { UpdateUserDto } from './dto/update-user.dto';
 import { User } from './entities/user.entity';
 import { Role } from '../role/entities/role.entity';
 import { Company } from '../company/entities/company.entity';
-import { Request } from '../request/entities/request.entity';
 
 @Injectable()
 export class UserService {
@@ -23,8 +22,6 @@ export class UserService {
     private roleRepository: Repository<Role>,
     @InjectRepository(Company)
     private companyRepository: Repository<Company>,
-    @InjectRepository(Request) // Inject RequestRepository
-    private requestRepository: Repository<Request>,
   ) {}
 
   async create(createUserDto: CreateUserDto): Promise<User> {
@@ -140,19 +137,9 @@ export class UserService {
   }
 
   async remove(id: string): Promise<void> {
-    const user = await this.findOne(id); // Use findOne to ensure the user exists and to get the entity
-
-    // Check if the user is associated with any requests
-    const associatedRequestsCount = await this.requestRepository.count({
-      where: { createdByUser: { id: user.id } },
-    });
-
-    if (associatedRequestsCount > 0) {
-      throw new BadRequestException(
-        `Cannot delete user with ID "${id}" because they are associated with ${associatedRequestsCount} request(s).`,
-      );
+    const result = await this.userRepository.softDelete(id);
+    if (result.affected === 0) {
+      throw new NotFoundException(`User with ID "${id}" not found`);
     }
-
-    await this.userRepository.remove(user);
   }
 }

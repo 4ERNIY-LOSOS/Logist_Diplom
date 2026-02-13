@@ -7,6 +7,7 @@ import {
   Param,
   Delete,
   UseGuards,
+  Req,
 } from '@nestjs/common';
 import { LtlShipmentService } from './ltl-shipment.service';
 import { CreateLtlShipmentDto } from './dto/create-ltl-shipment.dto';
@@ -23,8 +24,8 @@ export class LtlShipmentController {
 
   @Post()
   @Roles(RoleName.ADMIN, RoleName.LOGISTICIAN)
-  create(@Body() createLtlShipmentDto: CreateLtlShipmentDto) {
-    return this.ltlShipmentService.create(createLtlShipmentDto);
+  create(@Body() createLtlShipmentDto: CreateLtlShipmentDto, @Req() req) {
+    return this.ltlShipmentService.create(createLtlShipmentDto, req.user);
   }
 
   @Get()
@@ -44,13 +45,14 @@ export class LtlShipmentController {
   update(
     @Param('id') id: string,
     @Body() updateLtlShipmentDto: UpdateLtlShipmentDto,
+    @Req() req,
   ) {
-    return this.ltlShipmentService.update(id, updateLtlShipmentDto);
+    return this.ltlShipmentService.update(id, updateLtlShipmentDto, req.user);
   }
 
   @Delete(':id')
   @Roles(RoleName.ADMIN, RoleName.LOGISTICIAN)
-  remove(@Param('id') id: string) {
-    return this.ltlShipmentService.remove(id);
+  remove(@Param('id') id: string, @Req() req) {
+    return this.ltlShipmentService.remove(id, req.user);
   }
 }

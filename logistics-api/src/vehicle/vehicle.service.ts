@@ -1,6 +1,10 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ConflictException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, Not } from 'typeorm';
 import { CreateVehicleDto } from './dto/create-vehicle.dto';
 import { UpdateVehicleDto } from './dto/update-vehicle.dto';
 import { Vehicle } from './entities/vehicle.entity';
@@ -16,7 +20,16 @@ export class VehicleService {
   ) {}
 
   async create(createVehicleDto: CreateVehicleDto): Promise<Vehicle> {
-    const { typeId, ...rest } = createVehicleDto;
+    const { typeId, licensePlate, ...rest } = createVehicleDto;
+
+    const existingVehicle = await this.vehicleRepository.findOne({
+      where: { licensePlate },
+    });
+    if (existingVehicle) {
+      throw new ConflictException(
+        `Vehicle with license plate "${licensePlate}" already exists.`,
+      );
+    }
 
     const vehicleType = await this.vehicleTypeRepository.findOne({
       where: { id: typeId },
@@ -27,19 +40,33 @@ export class VehicleService {
 
     const vehicle = this.vehicleRepository.create({
       ...rest,
+      licensePlate,
       type: vehicleType,
     });
     return this.vehicleRepository.save(vehicle);
   }
 
-  findAll(isAvailable?: boolean): Promise<Vehicle[]> {
+  async findAll(options: {
+    isAvailable?: boolean;
+    page?: number;
+    limit?: number;
+  }): Promise<{ data: Vehicle[]; total: number }> {
+    const { isAvailable, page = 1, limit = 10 } = options;
+    const skip = (page - 1) * limit;
+
+    const where: any = {};
     if (isAvailable !== undefined) {
-      return this.vehicleRepository.find({
-        where: { isAvailable },
-        relations: ['type'],
-      });
+      where.isAvailable = isAvailable;
     }
-    return this.vehicleRepository.find({ relations: ['type'] });
+
+    const [data, total] = await this.vehicleRepository.findAndCount({
+      where,
+      relations: ['type'],
+      take: limit,
+      skip,
+    });
+
+    return { data, total };
   }
 
   async findOne(id: string): Promise<Vehicle> {
@@ -60,6 +87,23 @@ export class VehicleService {
     const vehicle = await this.findOne(id);
     const { typeId, ...rest } = updateVehicleDto;
 
+    if (
+      updateVehicleDto.licensePlate &&
+      updateVehicleDto.licensePlate !== vehicle.licensePlate
+    ) {
+      const existingVehicle = await this.vehicleRepository.findOne({
+        where: {
+          licensePlate: updateVehicleDto.licensePlate,
+          id: Not(id),
+        },
+      });
+      if (existingVehicle) {
+        throw new ConflictException(
+          `Vehicle with license plate "${updateVehicleDto.licensePlate}" already exists.`,
+        );
+      }
+    }
+
     if (typeId) {
       const vehicleType = await this.vehicleTypeRepository.findOne({
         where: { id: typeId },
@@ -77,7 +121,7 @@ export class VehicleService {
   }
 
   async remove(id: string): Promise<void> {
-    const result = await this.vehicleRepository.delete(id);
+    const result = await this.vehicleRepository.softDelete(id);
     if (result.affected === 0) {
       throw new NotFoundException(`Vehicle with ID "${id}" not found`);
     }

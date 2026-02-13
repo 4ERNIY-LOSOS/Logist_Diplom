@@ -11,6 +11,7 @@ import {
   Query,
   DefaultValuePipe,
   ParseBoolPipe,
+  ParseIntPipe,
 } from '@nestjs/common';
 import { DriverService } from './driver.service';
 import { CreateDriverDto } from './dto/create-driver.dto';
@@ -33,10 +34,12 @@ export class DriverController {
 
   @Get()
   findAll(
-    @Query('isAvailable', new DefaultValuePipe(undefined), ParseBoolPipe)
+    @Query('isAvailable', new DefaultValuePipe(undefined), new ParseBoolPipe({ optional: true }))
     isAvailable?: boolean,
+    @Query('page', new DefaultValuePipe(1), ParseIntPipe) page?: number,
+    @Query('limit', new DefaultValuePipe(10), ParseIntPipe) limit?: number,
   ) {
-    return this.driverService.findAll(isAvailable);
+    return this.driverService.findAll({ isAvailable, page, limit });
   }
 
   @Get(':id')

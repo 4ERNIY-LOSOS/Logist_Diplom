@@ -11,6 +11,7 @@ import {
   Query,
   DefaultValuePipe,
   ParseBoolPipe,
+  ParseIntPipe,
 } from '@nestjs/common';
 import { VehicleService } from './vehicle.service';
 import { CreateVehicleDto } from './dto/create-vehicle.dto';
@@ -33,10 +34,12 @@ export class VehicleController {
 
   @Get()
   findAll(
-    @Query('isAvailable', new DefaultValuePipe(undefined), ParseBoolPipe)
+    @Query('isAvailable', new DefaultValuePipe(undefined), new ParseBoolPipe({ optional: true }))
     isAvailable?: boolean,
+    @Query('page', new DefaultValuePipe(1), ParseIntPipe) page?: number,
+    @Query('limit', new DefaultValuePipe(10), ParseIntPipe) limit?: number,
   ) {
-    return this.vehicleService.findAll(isAvailable);
+    return this.vehicleService.findAll({ isAvailable, page, limit });
   }
 
   @Get(':id')
