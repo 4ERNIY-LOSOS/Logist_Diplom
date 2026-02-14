@@ -57,5 +57,15 @@ export const companyService = {
 
   async delete(id: string): Promise<void> {
     await api.delete(`/company/${id}`);
+  },
+
+  async getMyCompany(): Promise<Company> {
+    const response = await api.get('/company/me');
+    return response.data;
+  },
+
+  async updateMyCompany(data: any): Promise<Company> {
+    const response = await api.patch('/company/me', data);
+    return response.data;
   }
 };

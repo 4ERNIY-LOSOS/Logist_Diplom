@@ -55,6 +55,8 @@ interface CreateRequestFormProps {
 
 const CreateRequestForm: React.FC<CreateRequestFormProps> = ({ onSuccess, onCancel }) => {
   const [error, setError] = useState<string | null>(null);
+  const [isConfirming, setIsConfirming] = useState(false);
+  const [formData, setFormData] = useState<RequestFormValues | null>(null);
 
   const {
     register,
@@ -77,13 +79,19 @@ const CreateRequestForm: React.FC<CreateRequestFormProps> = ({ onSuccess, onCanc
     name: 'cargos',
   });
 
-  const onSubmit = async (data: RequestFormValues) => {
+  const handlePreview = (data: RequestFormValues) => {
+    setFormData(data);
+    setIsConfirming(true);
+  };
+
+  const onConfirm = async () => {
+    if (!formData) return;
     setError(null);
     try {
       await requestService.create({
-        ...data,
-        pickupDate: new Date(data.pickupDate).toISOString(),
-        deliveryDate: new Date(data.deliveryDate).toISOString(),
+        ...formData,
+        pickupDate: new Date(formData.pickupDate).toISOString(),
+        deliveryDate: new Date(formData.deliveryDate).toISOString(),
       });
       onSuccess();
     } catch (err: any) {
@@ -91,8 +99,76 @@ const CreateRequestForm: React.FC<CreateRequestFormProps> = ({ onSuccess, onCanc
     }
   };
 
+  if (isConfirming && formData) {
+    return (
+      <Box>
+        <Typography variant="h5" gutterBottom fontWeight="bold">
+          Проверьте данные заявки
+        </Typography>
+        <Alert severity="info" sx={{ mb: 3 }}>
+          Пожалуйста, убедитесь, что вся информация указана верно перед отправкой.
+        </Alert>
+
+        <Grid container spacing={3}>
+          <Grid size={{ xs: 12, md: 6 }}>
+            <Card variant="outlined">
+              <CardContent>
+                <Typography variant="subtitle1" fontWeight="bold">Сроки</Typography>
+                <Typography>Забор: {formData.pickupDate}</Typography>
+                <Typography>Доставка: {formData.deliveryDate}</Typography>
+              </CardContent>
+            </Card>
+          </Grid>
+          <Grid size={{ xs: 12, md: 6 }}>
+            <Card variant="outlined">
+              <CardContent>
+                <Typography variant="subtitle1" fontWeight="bold">Пункт отправления</Typography>
+                <Typography>
+                  {formData.pickupAddress.country}, г. {formData.pickupAddress.city}, {formData.pickupAddress.street}, д. {formData.pickupAddress.houseNumber}
+                </Typography>
+                <Typography>Индекс: {formData.pickupAddress.postalCode}</Typography>
+              </CardContent>
+            </Card>
+          </Grid>
+          <Grid size={{ xs: 12, md: 6 }}>
+            <Card variant="outlined">
+              <CardContent>
+                <Typography variant="subtitle1" fontWeight="bold">Пункт назначения</Typography>
+                <Typography>
+                  {formData.deliveryAddress.country}, г. {formData.deliveryAddress.city}, {formData.deliveryAddress.street}, д. {formData.deliveryAddress.houseNumber}
+                </Typography>
+                <Typography>Индекс: {formData.deliveryAddress.postalCode}</Typography>
+              </CardContent>
+            </Card>
+          </Grid>
+          <Grid size={{ xs: 12 }}>
+            <Card variant="outlined">
+              <CardContent>
+                <Typography variant="subtitle1" fontWeight="bold" gutterBottom>Грузы</Typography>
+                {formData.cargos.map((cargo, idx) => (
+                  <Box key={idx} sx={{ mb: 1 }}>
+                    <Typography variant="body2">
+                      {idx + 1}. {cargo.name} — {cargo.weight}кг, {cargo.volume}м³ ({cargo.type})
+                    </Typography>
+                  </Box>
+                ))}
+              </CardContent>
+            </Card>
+          </Grid>
+        </Grid>
+
+        <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 2, mt: 4 }}>
+          <Button variant="outlined" onClick={() => setIsConfirming(false)}>Назад к редактированию</Button>
+          <Button variant="contained" onClick={onConfirm} disabled={isSubmitting}>
+            {isSubmitting ? <CircularProgress size={24} /> : 'Всё верно, отправить'}
+          </Button>
+        </Box>
+      </Box>
+    );
+  }
+
   return (
-    <Box component="form" onSubmit={handleSubmit(onSubmit)} noValidate>
+    <Box component="form" onSubmit={handleSubmit(handlePreview)} noValidate>
       <Typography variant="h5" gutterBottom fontWeight="bold">
         Новая заявка на перевозку
       </Typography>

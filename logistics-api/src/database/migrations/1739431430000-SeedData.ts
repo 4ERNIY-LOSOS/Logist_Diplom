@@ -89,6 +89,37 @@ export class SeedData1739431430000 implements MigrationInterface {
 
         // Default Tariff
         await queryRunner.query(`INSERT INTO "tariffs" (id, name, base_fee, cost_per_km, cost_per_kg, cost_per_m3, is_active) VALUES (uuid_generate_v4(), 'Основной тариф 2026', 5000, 45, 3.5, 150, true) ON CONFLICT (name) DO NOTHING`);
+
+        // Mock Notifications for client_apple
+        const clientAppleIdQuery = await queryRunner.query(`SELECT id FROM "users" WHERE username = 'client_apple'`);
+        if (clientAppleIdQuery.length > 0) {
+            const userId = clientAppleIdQuery[0].id;
+            const companyId = 'a2e598c9-251a-4d37-817e-9799270b2a80';
+            await queryRunner.query(`INSERT INTO "notifications" (id, message, is_read, user_id) VALUES (uuid_generate_v4(), 'Добро пожаловать в новую панель управления AXIS!', false, '${userId}')`);
+            await queryRunner.query(`INSERT INTO "notifications" (id, message, is_read, user_id) VALUES (uuid_generate_v4(), 'Ваша заявка #12345 успешно создана.', true, '${userId}')`);
+
+            // Mock Addresses
+            const addr1 = 'b1e598c9-251a-4d37-817e-9799270b2a90';
+            const addr2 = 'b1e598c9-251a-4d37-817e-9799270b2a91';
+            await queryRunner.query(`INSERT INTO "addresses" (id, country, city, street, house_number, postal_code) VALUES ('${addr1}', 'Россия', 'Москва', 'Тверская', '1', '101000')`);
+            await queryRunner.query(`INSERT INTO "addresses" (id, country, city, street, house_number, postal_code) VALUES ('${addr2}', 'Россия', 'Санкт-Петербург', 'Невский', '10', '190000')`);
+
+            // Mock Request
+            const statusNewQuery = await queryRunner.query(`SELECT id FROM "request_statuses" WHERE name = 'Новая'`);
+            if (statusNewQuery.length > 0) {
+                const requestId = 'r1e598c9-251a-4d37-817e-9799270b2a92';
+                await queryRunner.query(`INSERT INTO "requests" (id, pickup_date, delivery_date, distance_km, preliminary_cost, created_by_user_id, company_id, status_id, pickup_address_id, delivery_address_id) VALUES ('${requestId}', now(), now() + interval '2 days', 700, 35000, '${userId}', '${companyId}', '${statusNewQuery[0].id}', '${addr1}', '${addr2}')`);
+
+                // Mock Cargo
+                const cargoTypeQuery = await queryRunner.query(`SELECT id FROM "cargo_types" LIMIT 1`);
+                if (cargoTypeQuery.length > 0) {
+                    await queryRunner.query(`INSERT INTO "cargos" (id, name, weight, volume, request_id, cargo_type_id) VALUES (uuid_generate_v4(), 'Оргтехника', 500, 2.5, '${requestId}', '${cargoTypeQuery[0].id}')`);
+                }
+            }
+
+            // Mock Invoice
+            await queryRunner.query(`INSERT INTO "invoices" (id, invoice_number, amount, tax_amount, status, due_date, company_id) VALUES (uuid_generate_v4(), 'INV-2026-001', 35000, 7000, 'SENT', now() + interval '14 days', '${companyId}')`);
+        }
     }
 
     public async down(queryRunner: QueryRunner): Promise<void> {

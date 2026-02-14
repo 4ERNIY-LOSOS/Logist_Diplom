@@ -18,6 +18,11 @@ import { RoleName } from './types';
 
 // Feature Components
 import ClientDashboard from './components/client/ClientDashboard';
+import ClientProfile from './components/client/ClientProfile';
+import ClientTracking from './components/client/ClientTracking';
+import ClientFinancials from './components/client/ClientFinancials';
+import ClientAnalytics from './components/client/ClientAnalytics';
+import NotificationHistory from './components/client/NotificationHistory';
 import LogisticianDashboard from './components/logistician/LogisticianDashboard';
 import ProcessRequestForm from './components/logistician/ProcessRequestForm';
 import { AdminDashboard } from './components/admin/AdminDashboard';
@@ -108,8 +113,13 @@ function App() {
               element={
                 <ProtectedRoute allowedRoles={[RoleName.CLIENT]}>
                   <Routes>
-                    <Route path="dashboard" element={<ClientDashboard />} />
+                    <Route path="profile" element={<ClientProfile />} />
                     <Route path="requests" element={<ClientDashboard />} />
+                    <Route path="dashboard" element={<Navigate to="/client/requests" replace />} />
+                    <Route path="tracking" element={<ClientTracking />} />
+                    <Route path="financials" element={<ClientFinancials />} />
+                    <Route path="analytics" element={<ClientAnalytics />} />
+                    <Route path="notifications" element={<NotificationHistory />} />
                   </Routes>
                 </ProtectedRoute>
               }
@@ -132,7 +142,7 @@ const Home: React.FC = () => {
   if (user?.role === RoleName.LOGISTICIAN) return <Navigate to="/logistician/dashboard" replace />;
   if (user?.role === RoleName.CLIENT) {
     if (!user.companyId) return <Navigate to="/complete-profile" replace />;
-    return <Navigate to="/client/dashboard" replace />;
+    return <Navigate to="/client/requests" replace />;
   }
 
   return (

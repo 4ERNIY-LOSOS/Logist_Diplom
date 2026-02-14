@@ -218,7 +218,15 @@ export class RequestService {
 
     // More granular checks could be added here, e.g., preventing a LOGISTICIAN from changing the cost
     // For now, we trust the roles that have access to this endpoint.
-    Object.assign(request, updateRequestDto);
+    const { statusName, ...rest } = updateRequestDto as any;
+
+    if (statusName) {
+      const status = await this.requestStatusRepository.findOne({ where: { name: statusName } });
+      if (!status) throw new NotFoundException(`Status "${statusName}" not found`);
+      request.status = status;
+    }
+
+    Object.assign(request, rest);
 
     // Note: If the update includes changes to cargos or distance, recalculating preliminary cost might be needed.
     // This is a feature enhancement for later.

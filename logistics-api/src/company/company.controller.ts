@@ -29,6 +29,12 @@ export class CompanyController {
     return this.companyService.findMyCompany(req.user.userId);
   }
 
+  @Patch('me')
+  @Roles(RoleName.CLIENT)
+  updateMyCompany(@Req() req, @Body() updateCompanyDto: UpdateCompanyDto) {
+    return this.companyService.updateMyCompany(req.user.userId, updateCompanyDto);
+  }
+
   @Post()
   @Roles(RoleName.ADMIN, RoleName.LOGISTICIAN, RoleName.CLIENT)
   create(@Body() createCompanyDto: CreateCompanyDto) {

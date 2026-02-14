@@ -39,15 +39,39 @@ const MainLayout: React.FC = () => {
 
   const navItems = [
     {
-      text: 'Панель управления',
-      icon: <DashboardIcon />,
-      path: isAdmin ? '/admin' : isLogistician ? '/logistician/dashboard' : '/client/dashboard',
+      text: isClient ? 'Личный кабинет' : 'Панель управления',
+      icon: isClient ? <PeopleIcon /> : <DashboardIcon />,
+      path: isAdmin ? '/admin' : isLogistician ? '/logistician/dashboard' : '/client/profile',
       show: true,
     },
     {
       text: 'Мои заявки',
       icon: <AssignmentIcon />,
       path: '/client/requests',
+      show: isClient,
+    },
+    {
+      text: 'Отслеживание',
+      icon: <LocalShippingIcon />,
+      path: '/client/tracking',
+      show: isClient,
+    },
+    {
+      text: 'Финансы',
+      icon: <BarChartIcon />,
+      path: '/client/financials',
+      show: isClient,
+    },
+    {
+      text: 'Аналитика',
+      icon: <BarChartIcon />,
+      path: '/client/analytics',
+      show: isClient,
+    },
+    {
+      text: 'Уведомления',
+      icon: <AssignmentIcon />, // Or a notification icon
+      path: '/client/notifications',
       show: isClient,
     },
     {

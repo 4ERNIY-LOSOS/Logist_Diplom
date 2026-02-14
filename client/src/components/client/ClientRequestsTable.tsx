@@ -11,7 +11,17 @@ import {
   Typography,
   CircularProgress,
   Alert,
+  IconButton,
+  Tooltip,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogContentText,
+  DialogActions,
+  Button,
 } from '@mui/material';
+import DeleteIcon from '@mui/icons-material/Delete';
+import BlockIcon from '@mui/icons-material/Block';
 import type { LogisticRequest } from '../../types';
 import { requestService } from '../../services/request.service';
 import { DateTime } from 'luxon';
@@ -21,19 +31,49 @@ const ClientRequestsTable: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [requestToDelete, setRequestToDelete] = useState<string | null>(null);
+
+  const fetchRequests = async () => {
+    try {
+      setLoading(true);
+      const data = await requestService.getAll();
+      setRequests(data);
+    } catch (err: any) {
+      setError(err.message || 'Ошибка при загрузке заявок');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const fetchRequests = async () => {
-      try {
-        const data = await requestService.getAll();
-        setRequests(data);
-      } catch (err: any) {
-        setError(err.message || 'Ошибка при загрузке заявок');
-      } finally {
-        setLoading(false);
-      }
-    };
     fetchRequests();
   }, []);
+
+  const handleDeleteClick = (id: string) => {
+    setRequestToDelete(id);
+    setDeleteDialogOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!requestToDelete) return;
+    try {
+      await requestService.delete(requestToDelete);
+      setRequests(requests.filter(r => r.id !== requestToDelete));
+      setDeleteDialogOpen(false);
+    } catch (err: any) {
+      setError(err.message || 'Ошибка при удалении заявки');
+    }
+  };
+
+  const handleCancelRequest = async (id: string) => {
+    try {
+      await requestService.update(id, { statusName: 'Отклонена' });
+      fetchRequests();
+    } catch (err: any) {
+      setError(err.message || 'Ошибка при отмене заявки');
+    }
+  };
 
   const getStatusColor = (status: string): 'info' | 'warning' | 'success' | 'error' | 'default' => {
     switch (status) {
@@ -49,6 +89,7 @@ const ClientRequestsTable: React.FC = () => {
   if (error) return <Alert severity="error">{error}</Alert>;
 
   return (
+    <>
     <TableContainer component={Paper} variant="outlined" sx={{ borderRadius: 2 }}>
       <Table>
         <TableHead sx={{ bgcolor: 'grey.50' }}>
@@ -58,6 +99,7 @@ const ClientRequestsTable: React.FC = () => {
             <TableCell sx={{ fontWeight: 'bold' }}>Груз</TableCell>
             <TableCell sx={{ fontWeight: 'bold' }}>Статус</TableCell>
             <TableCell sx={{ fontWeight: 'bold' }}>Стоимость (предв.)</TableCell>
+            <TableCell sx={{ fontWeight: 'bold' }}>Действия</TableCell>
           </TableRow>
         </TableHead>
         <TableBody>
@@ -89,12 +131,41 @@ const ClientRequestsTable: React.FC = () => {
                 <TableCell>
                   {request.preliminaryCost ? `${request.preliminaryCost} ₽` : 'Ожидает расчета'}
                 </TableCell>
+                <TableCell>
+                  {request.status.name === 'Новая' ? (
+                    <Tooltip title="Удалить заявку">
+                      <IconButton color="error" size="small" onClick={() => handleDeleteClick(request.id)}>
+                        <DeleteIcon fontSize="small" />
+                      </IconButton>
+                    </Tooltip>
+                  ) : request.status.name === 'В обработке' ? (
+                    <Tooltip title="Отменить заявку">
+                      <IconButton color="warning" size="small" onClick={() => handleCancelRequest(request.id)}>
+                        <BlockIcon fontSize="small" />
+                      </IconButton>
+                    </Tooltip>
+                  ) : null}
+                </TableCell>
               </TableRow>
             ))
           )}
         </TableBody>
       </Table>
     </TableContainer>
+
+    <Dialog open={deleteDialogOpen} onClose={() => setDeleteDialogOpen(false)}>
+      <DialogTitle>Удаление заявки</DialogTitle>
+      <DialogContent>
+        <DialogContentText>
+          Вы уверены, что хотите полностью удалить эту заявку? Это действие необратимо.
+        </DialogContentText>
+      </DialogContent>
+      <DialogActions>
+        <Button onClick={() => setDeleteDialogOpen(false)}>Отмена</Button>
+        <Button onClick={confirmDelete} color="error" variant="contained">Удалить</Button>
+      </DialogActions>
+    </Dialog>
+    </>
   );
 };
 

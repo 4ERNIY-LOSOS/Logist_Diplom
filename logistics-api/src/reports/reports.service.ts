@@ -57,4 +57,40 @@ export class ReportsService {
       totalVehicles,
     };
   }
+
+  async getClientStats(companyId: string) {
+    const requests = await this.requestRepository.find({
+      where: { company: { id: companyId } },
+      relations: ['status'],
+      order: { createdAt: 'ASC' },
+    });
+
+    // Group by month
+    const statsByMonth: Record<string, { orders: number; cost: number }> = {};
+
+    requests.forEach(req => {
+      const month = new Date(req.createdAt).toLocaleString('default', { month: 'short', year: 'numeric' });
+      if (!statsByMonth[month]) {
+        statsByMonth[month] = { orders: 0, cost: 0 };
+      }
+      statsByMonth[month].orders += 1;
+      statsByMonth[month].cost += Number(req.finalCost || req.preliminaryCost || 0);
+    });
+
+    const chartData = Object.entries(statsByMonth).map(([name, data]) => ({
+      name,
+      ...data,
+    }));
+
+    const totalOrders = requests.length;
+    const completedOrders = requests.filter(r => r.status.name === 'Завершена').length;
+    const totalSpent = requests.reduce((acc, r) => acc + Number(r.finalCost || 0), 0);
+
+    return {
+      chartData,
+      totalOrders,
+      completedOrders,
+      totalSpent,
+    };
+  }
 }
