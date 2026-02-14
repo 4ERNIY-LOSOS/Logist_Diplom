@@ -1,6 +1,6 @@
 import { Injectable, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Between, LessThanOrEqual, MoreThanOrEqual } from 'typeorm';
+import { Repository, Between, LessThanOrEqual, MoreThanOrEqual, EntityManager } from 'typeorm';
 import { Shipment } from '../shipment/entities/shipment.entity';
 import { VehicleMaintenance } from '../vehicle/entities/vehicle-maintenance.entity';
 
@@ -13,9 +13,12 @@ export class SchedulingService {
     private maintenanceRepository: Repository<VehicleMaintenance>,
   ) {}
 
-  async checkVehicleAvailability(vehicleId: string, start: Date, end: Date): Promise<boolean> {
+  async checkVehicleAvailability(vehicleId: string, start: Date, end: Date, manager?: EntityManager): Promise<boolean> {
+    const shipmentRepo = manager ? manager.getRepository(Shipment) : this.shipmentRepository;
+    const maintenanceRepo = manager ? manager.getRepository(VehicleMaintenance) : this.maintenanceRepository;
+
     // 1. Check for overlapping shipments
-    const overlappingShipment = await this.shipmentRepository.findOne({
+    const overlappingShipment = await shipmentRepo.findOne({
       where: [
         {
           vehicle: { id: vehicleId },
@@ -38,7 +41,7 @@ export class SchedulingService {
     }
 
     // 2. Check for overlapping maintenance
-    const overlappingMaintenance = await this.maintenanceRepository.findOne({
+    const overlappingMaintenance = await maintenanceRepo.findOne({
       where: [
         {
           vehicle: { id: vehicleId },
@@ -59,8 +62,10 @@ export class SchedulingService {
     return true;
   }
 
-  async checkDriverAvailability(driverId: string, start: Date, end: Date): Promise<boolean> {
-    const overlappingShipment = await this.shipmentRepository.findOne({
+  async checkDriverAvailability(driverId: string, start: Date, end: Date, manager?: EntityManager): Promise<boolean> {
+    const shipmentRepo = manager ? manager.getRepository(Shipment) : this.shipmentRepository;
+
+    const overlappingShipment = await shipmentRepo.findOne({
       where: [
         {
           driver: { id: driverId },

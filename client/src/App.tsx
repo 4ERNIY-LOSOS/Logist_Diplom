@@ -11,6 +11,8 @@ import ProtectedRoute from './components/ProtectedRoute';
 import MainLayout from './components/MainLayout';
 import LoginPage from './components/LoginPage';
 import RegisterPage from './components/RegisterPage';
+import VerifyEmail from './components/VerifyEmail';
+import CompleteProfile from './components/CompleteProfile';
 import { Role } from './types';
 
 // Feature Components
@@ -54,7 +56,12 @@ function App() {
         <Routes>
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
-
+          <Route path="/verify-email" element={<VerifyEmail />} />
+          <Route path="/complete-profile" element={
+            <ProtectedRoute allowedRoles={[Role.CLIENT]}>
+              <CompleteProfile />
+            </ProtectedRoute>
+          } />
           <Route
             path="/"
             element={
@@ -118,7 +125,10 @@ const Home: React.FC = () => {
 
   if (user?.role === Role.ADMIN) return <Navigate to="/admin" replace />;
   if (user?.role === Role.LOGISTICIAN) return <Navigate to="/logistician/dashboard" replace />;
-  if (user?.role === Role.CLIENT) return <Navigate to="/client/dashboard" replace />;
+  if (user?.role === Role.CLIENT) {
+    if (!user.companyId) return <Navigate to="/complete-profile" replace />;
+    return <Navigate to="/client/dashboard" replace />;
+  }
 
   return (
     <div style={{ textAlign: 'center', marginTop: '40px' }}>

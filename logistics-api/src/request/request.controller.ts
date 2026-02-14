@@ -23,6 +23,12 @@ import { RoleName } from '../auth/enums/role-name.enum';
 export class RequestController {
   constructor(private readonly requestService: RequestService) {}
 
+  @Get('statuses')
+  @Roles(RoleName.ADMIN, RoleName.LOGISTICIAN, RoleName.CLIENT)
+  findAllStatuses() {
+    return this.requestService.findAllStatuses();
+  }
+
   @Post()
   @Roles(RoleName.CLIENT)
   create(@Body() createRequestDto: CreateRequestDto, @Req() req) {

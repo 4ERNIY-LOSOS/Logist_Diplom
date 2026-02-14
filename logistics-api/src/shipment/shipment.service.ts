@@ -48,14 +48,14 @@ export class ShipmentService {
   async createFromRequest(
     createShipmentDto: CreateShipmentDto,
   ): Promise<Shipment> {
-    const { requestId, driverId, vehicleId, plannedPickupDate, plannedDeliveryDate, ...rest } = createShipmentDto;
-
-    // Check scheduling conflicts
-    await this.schedulingService.checkVehicleAvailability(vehicleId, new Date(plannedPickupDate), new Date(plannedDeliveryDate));
-    await this.schedulingService.checkDriverAvailability(driverId, new Date(plannedPickupDate), new Date(plannedDeliveryDate));
+    const { requestId, driverId, vehicleId, plannedPickupDate, plannedDeliveryDate, finalCost, ...rest } = createShipmentDto;
 
     return this.entityManager.transaction(
       async (transactionalEntityManager) => {
+        // Check scheduling conflicts INSIDE transaction
+        await this.schedulingService.checkVehicleAvailability(vehicleId, new Date(plannedPickupDate), new Date(plannedDeliveryDate), transactionalEntityManager);
+        await this.schedulingService.checkDriverAvailability(driverId, new Date(plannedPickupDate), new Date(plannedDeliveryDate), transactionalEntityManager);
+
         const request = await transactionalEntityManager.findOne(Request, {
           where: { id: requestId },
           relations: ['shipment', 'cargos'],
@@ -99,7 +99,7 @@ export class ShipmentService {
           );
         }
 
-        const plannedStatus = await this.shipmentStatusRepository.findOne({
+        const plannedStatus = await transactionalEntityManager.findOne(ShipmentStatus, {
           where: { name: 'Запланирована' },
         });
         if (!plannedStatus) {
@@ -109,7 +109,7 @@ export class ShipmentService {
         }
 
         const requestCompletedStatus =
-          await this.requestStatusRepository.findOne({
+          await transactionalEntityManager.findOne(RequestStatus, {
             where: { name: 'Завершена' },
           });
         if (!requestCompletedStatus) {
@@ -139,6 +139,7 @@ export class ShipmentService {
         await transactionalEntityManager.save(vehicle);
 
         request.status = requestCompletedStatus;
+        request.finalCost = finalCost;
         await transactionalEntityManager.save(request);
 
         const newShipment = transactionalEntityManager.create(Shipment, {
@@ -298,6 +299,10 @@ export class ShipmentService {
         return transactionalEntityManager.save(shipment);
       },
     );
+  }
+
+  async findAllStatuses(): Promise<ShipmentStatus[]> {
+    return this.shipmentStatusRepository.find();
   }
 
   async findAll(reqUser: any) {

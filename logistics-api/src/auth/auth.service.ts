@@ -30,7 +30,8 @@ export class AuthService {
     const payload = {
       username: user.username,
       sub: user.id,
-      role: user.role.name, // Use role name from the nested object
+      role: user.role.name,
+      companyId: user.company?.id,
     };
     return {
       access_token: this.jwtService.sign(payload),

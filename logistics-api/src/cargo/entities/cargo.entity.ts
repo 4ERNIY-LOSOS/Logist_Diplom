@@ -7,6 +7,7 @@ import {
   PrimaryGeneratedColumn,
   Check,
 } from 'typeorm';
+import { Exclude } from 'class-transformer';
 import { Request } from '../../request/entities/request.entity';
 import { CargoType } from './cargo-type.entity';
 import { CargoRequirement } from './cargo-requirement.entity';
@@ -18,6 +19,7 @@ export class Cargo {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
+  @Exclude()
   @ManyToOne(() => Request, (request) => request.cargos)
   @JoinColumn({ name: 'request_id' })
   request: Request;

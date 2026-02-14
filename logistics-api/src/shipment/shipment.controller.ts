@@ -25,6 +25,12 @@ import { RoleName } from '../auth/enums/role-name.enum';
 export class ShipmentController {
   constructor(private readonly shipmentService: ShipmentService) {}
 
+  @Get('statuses')
+  @Roles(RoleName.ADMIN, RoleName.LOGISTICIAN, RoleName.CLIENT)
+  findAllStatuses() {
+    return this.shipmentService.findAllStatuses();
+  }
+
   @Post()
   @Roles(RoleName.ADMIN, RoleName.LOGISTICIAN)
   create(@Body() createShipmentDto: CreateShipmentDto) {

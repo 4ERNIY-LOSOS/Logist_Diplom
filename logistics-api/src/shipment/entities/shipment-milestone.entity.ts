@@ -6,6 +6,7 @@ import {
   ManyToOne,
   PrimaryGeneratedColumn,
 } from 'typeorm';
+import { Exclude } from 'class-transformer';
 import { Shipment } from './shipment.entity';
 
 export enum MilestoneType {
@@ -26,6 +27,7 @@ export class ShipmentMilestone {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
+  @Exclude()
   @ManyToOne('Shipment', 'milestones', { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'shipment_id' })
   shipment: any;

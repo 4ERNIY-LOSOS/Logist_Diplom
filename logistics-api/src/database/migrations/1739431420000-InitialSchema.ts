@@ -10,6 +10,8 @@ export class InitialSchema1739431420000 implements MigrationInterface {
         await queryRunner.query(`CREATE TYPE "drivers_status_enum" AS ENUM('AVAILABLE', 'BUSY', 'ON_LEAVE')`);
         await queryRunner.query(`CREATE TYPE "documents_type_enum" AS ENUM('BILL_OF_LADING', 'PACKING_LIST', 'INVOICE', 'PROOF_OF_DELIVERY', 'OTHER')`);
         await queryRunner.query(`CREATE TYPE "ltl_shipments_status_enum" AS ENUM('CONSOLIDATING', 'IN_TRANSIT', 'ARRIVED', 'DECONSOLIDATED')`);
+        await queryRunner.query(`CREATE TYPE "vehicle_maintenance_type_enum" AS ENUM('ROUTINE', 'REPAIR', 'INSPECTION')`);
+        await queryRunner.query(`CREATE TYPE "invoices_status_enum" AS ENUM('DRAFT', 'SENT', 'PAID', 'OVERDUE', 'CANCELLED')`);
 
         // Roles
         await queryRunner.query(`CREATE TABLE "roles" ("id" uuid NOT NULL DEFAULT uuid_generate_v4(), "name" character varying(50) NOT NULL, "description" character varying, CONSTRAINT "UQ_roles_name" UNIQUE ("name"), CONSTRAINT "PK_roles" PRIMARY KEY ("id"))`);
@@ -74,7 +76,7 @@ export class InitialSchema1739431420000 implements MigrationInterface {
         await queryRunner.query(`CREATE TABLE "gps_logs" ("id" uuid NOT NULL DEFAULT uuid_generate_v4(), "latitude" numeric(10,8) NOT NULL, "longitude" numeric(11,8) NOT NULL, "timestamp" TIMESTAMP WITH TIME ZONE NOT NULL, "shipment_id" uuid, CONSTRAINT "PK_gps_logs" PRIMARY KEY ("id"))`);
 
         // Audit Logs
-        await queryRunner.query(`CREATE TABLE "audit_logs" ("id" uuid NOT NULL DEFAULT uuid_generate_v4(), "action" character varying NOT NULL, "entity_name" character varying NOT NULL, "entity_id" character varying NOT NULL, "old_values" jsonb, "new_values" jsonb, "user_id" uuid, "timestamp" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(), CONSTRAINT "PK_audit_logs" PRIMARY KEY ("id"))`);
+        await queryRunner.query(`CREATE TABLE "audit_logs" ("id" uuid NOT NULL DEFAULT uuid_generate_v4(), "action_type" character varying NOT NULL, "entity_name" character varying NOT NULL, "entity_id" character varying NOT NULL, "details" jsonb, "user_id" uuid, "timestamp" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(), CONSTRAINT "PK_audit_logs" PRIMARY KEY ("id"))`);
 
         // Tariffs
         await queryRunner.query(`CREATE TABLE "tariffs" ("id" uuid NOT NULL DEFAULT uuid_generate_v4(), "name" character varying NOT NULL, "base_price" numeric(10,2) NOT NULL, "price_per_km" numeric(10,2) NOT NULL, "price_per_kg" numeric(10,2) NOT NULL, "price_per_m3" numeric(10,2) NOT NULL, "is_active" boolean NOT NULL DEFAULT true, CONSTRAINT "PK_tariffs" PRIMARY KEY ("id"))`);
@@ -83,10 +85,10 @@ export class InitialSchema1739431420000 implements MigrationInterface {
         await queryRunner.query(`CREATE TABLE "warehouses" ("id" uuid NOT NULL DEFAULT uuid_generate_v4(), "name" character varying NOT NULL, "capacity_m3" numeric(10,2) NOT NULL, "address_id" uuid, CONSTRAINT "PK_warehouses" PRIMARY KEY ("id"))`);
 
         // Invoices
-        await queryRunner.query(`CREATE TABLE "invoices" ("id" uuid NOT NULL DEFAULT uuid_generate_v4(), "invoice_number" character varying NOT NULL, "amount" numeric(10,2) NOT NULL, "due_date" TIMESTAMP WITH TIME ZONE NOT NULL, "paid_at" TIMESTAMP WITH TIME ZONE, "status" character varying NOT NULL DEFAULT 'PENDING', "company_id" uuid, "created_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(), CONSTRAINT "UQ_invoices_invoice_number" UNIQUE ("invoice_number"), CONSTRAINT "PK_invoices" PRIMARY KEY ("id"))`);
+        await queryRunner.query(`CREATE TABLE "invoices" ("id" uuid NOT NULL DEFAULT uuid_generate_v4(), "invoice_number" character varying NOT NULL, "amount" numeric(12,2) NOT NULL, "tax_amount" numeric(12,2) NOT NULL DEFAULT '0', "status" "invoices_status_enum" NOT NULL DEFAULT 'DRAFT', "due_date" TIMESTAMP WITH TIME ZONE NOT NULL, "paid_date" TIMESTAMP WITH TIME ZONE, "shipment_id" uuid, "company_id" uuid, "created_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(), "updated_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(), CONSTRAINT "UQ_invoices_invoice_number" UNIQUE ("invoice_number"), CONSTRAINT "PK_invoices" PRIMARY KEY ("id"))`);
 
         // Vehicle Maintenance
-        await queryRunner.query(`CREATE TABLE "vehicle_maintenance" ("id" uuid NOT NULL DEFAULT uuid_generate_v4(), "description" character varying NOT NULL, "cost" numeric(10,2) NOT NULL, "date" TIMESTAMP WITH TIME ZONE NOT NULL, "vehicle_id" uuid, CONSTRAINT "PK_vehicle_maintenance" PRIMARY KEY ("id"))`);
+        await queryRunner.query(`CREATE TABLE "vehicle_maintenance" ("id" uuid NOT NULL DEFAULT uuid_generate_v4(), "type" "vehicle_maintenance_type_enum" NOT NULL, "start_date" TIMESTAMP WITH TIME ZONE NOT NULL, "end_date" TIMESTAMP WITH TIME ZONE, "description" character varying, "cost" numeric(10,2) NOT NULL DEFAULT '0', "vehicle_id" uuid, "created_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(), CONSTRAINT "PK_vehicle_maintenance" PRIMARY KEY ("id"))`);
 
         // Foreign Keys
         await queryRunner.query(`ALTER TABLE "users" ADD CONSTRAINT "FK_users_roles" FOREIGN KEY ("role_id") REFERENCES "roles"("id") ON DELETE NO ACTION ON UPDATE NO ACTION`);
@@ -113,6 +115,7 @@ export class InitialSchema1739431420000 implements MigrationInterface {
         await queryRunner.query(`ALTER TABLE "audit_logs" ADD CONSTRAINT "FK_audit_logs_users" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE NO ACTION ON UPDATE NO ACTION`);
         await queryRunner.query(`ALTER TABLE "warehouses" ADD CONSTRAINT "FK_warehouses_addresses" FOREIGN KEY ("address_id") REFERENCES "addresses"("id") ON DELETE NO ACTION ON UPDATE NO ACTION`);
         await queryRunner.query(`ALTER TABLE "invoices" ADD CONSTRAINT "FK_invoices_companies" FOREIGN KEY ("company_id") REFERENCES "companies"("id") ON DELETE NO ACTION ON UPDATE NO ACTION`);
+        await queryRunner.query(`ALTER TABLE "invoices" ADD CONSTRAINT "FK_invoices_shipments" FOREIGN KEY ("shipment_id") REFERENCES "shipments"("id") ON DELETE CASCADE ON UPDATE NO ACTION`);
         await queryRunner.query(`ALTER TABLE "vehicle_maintenance" ADD CONSTRAINT "FK_vehicle_maintenance_vehicles" FOREIGN KEY ("vehicle_id") REFERENCES "vehicles"("id") ON DELETE NO ACTION ON UPDATE NO ACTION`);
     }
 
@@ -144,6 +147,8 @@ export class InitialSchema1739431420000 implements MigrationInterface {
         await queryRunner.query(`DROP TABLE "roles"`);
 
         // Drop Enums
+        await queryRunner.query(`DROP TYPE "invoices_status_enum"`);
+        await queryRunner.query(`DROP TYPE "vehicle_maintenance_type_enum"`);
         await queryRunner.query(`DROP TYPE "ltl_shipments_status_enum"`);
         await queryRunner.query(`DROP TYPE "documents_type_enum"`);
         await queryRunner.query(`DROP TYPE "drivers_status_enum"`);

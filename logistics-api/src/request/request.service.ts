@@ -6,12 +6,13 @@ import {
   Logger,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, In } from 'typeorm';
 import { CreateRequestDto } from './dto/create-request.dto';
 import { UpdateRequestDto } from './dto/update-request.dto';
 import { Request } from './entities/request.entity';
 import { User } from '../user/entities/user.entity';
 import { RequestStatus } from './entities/request-status.entity';
+import { CargoType } from '../cargo/entities/cargo-type.entity';
 import { RoleName } from '../auth/enums/role-name.enum';
 import { UserService } from '../user/user.service';
 import { PricingEngineService } from '../pricing/pricing-engine.service';
@@ -25,6 +26,8 @@ export class RequestService {
     private requestRepository: Repository<Request>,
     @InjectRepository(RequestStatus)
     private requestStatusRepository: Repository<RequestStatus>,
+    @InjectRepository(CargoType)
+    private cargoTypeRepository: Repository<CargoType>,
     private userService: UserService,
     private pricingEngineService: PricingEngineService,
   ) {}
@@ -78,11 +81,26 @@ export class RequestService {
       );
     }
 
+    // Resolve cargo types
+    const cargoTypeNames = cargos.map(c => c.type);
+    const cargoTypes = await this.cargoTypeRepository.find({
+      where: { name: In(cargoTypeNames) }
+    });
+
+    const cargosWithTypes = cargos.map(c => {
+      const type = cargoTypes.find(ct => ct.name === c.type);
+      if (!type) throw new NotFoundException(`Cargo type "${c.type}" not found`);
+      return {
+        ...c,
+        cargoType: type
+      };
+    });
+
     let preliminaryCost = 0;
     try {
       const tempRequest = this.requestRepository.create({
           distanceKm: distanceKm || 1,
-          cargos: cargos as any,
+          cargos: cargosWithTypes as any,
       });
       const calculation = await this.pricingEngineService.calculateRequestCost(tempRequest);
       preliminaryCost = calculation.preliminaryCost;
@@ -98,7 +116,7 @@ export class RequestService {
       ...rest,
       pickupAddress,
       deliveryAddress,
-      cargos,
+      cargos: cargosWithTypes,
       createdByUser: user,
       company: user.company,
       status: initialStatus,
@@ -106,6 +124,10 @@ export class RequestService {
     });
 
     return this.requestRepository.save(newRequest);
+  }
+
+  async findAllStatuses(): Promise<RequestStatus[]> {
+    return this.requestStatusRepository.find();
   }
 
   async findAll(reqUser: any): Promise<Request[]> {

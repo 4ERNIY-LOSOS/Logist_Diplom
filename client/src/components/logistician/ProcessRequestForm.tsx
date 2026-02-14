@@ -3,7 +3,6 @@ import { useParams, useNavigate } from 'react-router-dom';
 import {
   Box,
   Typography,
-  Grid,
   TextField,
   Button,
   MenuItem,
@@ -12,6 +11,7 @@ import {
   CircularProgress,
   Alert,
 } from '@mui/material';
+import Grid from '@mui/material/Grid';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -76,19 +76,14 @@ const ProcessRequestForm: React.FC = () => {
     if (!requestId) return;
     setError(null);
     try {
-      // 1. Update request with final cost and change status
-      await requestService.update(requestId, {
-        finalCost: data.finalCost,
-        statusId: (await requestService.getStatuses()).find(s => s.name === 'В обработке')?.id // Simplification
-      });
-
-      // 2. Create shipment
+      // Single atomic call to create shipment from request with final cost
       await shipmentService.create({
         requestId,
         driverId: data.driverId,
         vehicleId: data.vehicleId,
         plannedPickupDate: new Date(data.plannedPickupDate).toISOString(),
         plannedDeliveryDate: new Date(data.plannedDeliveryDate).toISOString(),
+        finalCost: data.finalCost,
       });
 
       navigate('/logistician/dashboard');
