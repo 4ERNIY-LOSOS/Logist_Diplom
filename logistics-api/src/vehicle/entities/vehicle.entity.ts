@@ -9,9 +9,11 @@ import {
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
+import { Exclude } from 'class-transformer';
 import { VehicleType } from './vehicle-type.entity';
 import { Shipment } from '../../shipment/entities/shipment.entity';
 import { VehicleMaintenance } from './vehicle-maintenance.entity';
+import { NumericTransformer } from '../../common/transformers/numeric.transformer';
 
 export enum VehicleStatus {
   AVAILABLE = 'AVAILABLE',
@@ -34,15 +36,16 @@ export class Vehicle {
   @Column()
   model: string;
 
-  @Column('decimal', { precision: 10, scale: 2, name: 'payload_capacity' })
+  @Column('decimal', { precision: 10, scale: 2, name: 'payload_capacity', transformer: new NumericTransformer() })
   payloadCapacity: number; // in kg
 
-  @Column('decimal', { precision: 10, scale: 2, name: 'volume_capacity' })
+  @Column('decimal', { precision: 10, scale: 2, name: 'volume_capacity', transformer: new NumericTransformer() })
   volumeCapacity: number; // in m³
 
   @Column({
     type: 'enum',
     enum: VehicleStatus,
+    enumName: 'vehicles_status_enum',
     default: VehicleStatus.AVAILABLE,
   })
   status: VehicleStatus;
@@ -50,9 +53,11 @@ export class Vehicle {
   @Column({ name: 'is_available', default: true })
   isAvailable: boolean;
 
+  @Exclude()
   @OneToMany(() => Shipment, (shipment) => shipment.vehicle)
   shipments: Shipment[];
 
+  @Exclude()
   @OneToMany('VehicleMaintenance', 'vehicle')
   maintenanceLogs: VehicleMaintenance[];
 

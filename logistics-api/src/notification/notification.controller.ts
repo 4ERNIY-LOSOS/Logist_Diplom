@@ -7,7 +7,6 @@ import {
   Patch,
   Delete,
   UseGuards,
-  Req,
 } from '@nestjs/common';
 import { NotificationService } from './notification.service';
 import { CreateNotificationDto } from './dto/create-notification.dto';
@@ -16,6 +15,8 @@ import { AuthGuard } from '@nestjs/passport';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { RoleName } from '../auth/enums/role-name.enum';
+import { GetUser } from '../auth/decorators/get-user.decorator';
+import type { RequestUser } from '../auth/interfaces/request-user.interface';
 
 @UseGuards(AuthGuard('jwt'), RolesGuard)
 @Controller('notification')
@@ -30,14 +31,14 @@ export class NotificationController {
 
   @Get('my')
   @Roles(RoleName.CLIENT, RoleName.LOGISTICIAN, RoleName.ADMIN)
-  findAllMy(@Req() req: any) {
-    return this.notificationService.findAllByUserId(req.user.userId);
+  findAllMy(@GetUser() user: RequestUser) {
+    return this.notificationService.findAllByUserId(user.userId);
   }
 
   @Get('my/unread')
   @Roles(RoleName.CLIENT, RoleName.LOGISTICIAN, RoleName.ADMIN)
-  findMyUnread(@Req() req: any) {
-    return this.notificationService.findUnreadByUserId(req.user.userId);
+  findMyUnread(@GetUser() user: RequestUser) {
+    return this.notificationService.findUnreadByUserId(user.userId);
   }
 
   @Get('all')
@@ -48,20 +49,20 @@ export class NotificationController {
 
   @Patch(':id/read')
   @Roles(RoleName.CLIENT, RoleName.LOGISTICIAN, RoleName.ADMIN)
-  markAsRead(@Param('id') id: string, @Req() req: any) {
-    return this.notificationService.markAsRead(id, req.user.userId);
+  markAsRead(@Param('id') id: string, @GetUser() user: RequestUser) {
+    return this.notificationService.markAsRead(id, user.userId);
   }
 
   @Patch('mark-all-read')
   @Roles(RoleName.CLIENT, RoleName.LOGISTICIAN, RoleName.ADMIN)
-  markAllAsRead(@Req() req: any) {
-    return this.notificationService.markAllAsRead(req.user.userId);
+  markAllAsRead(@GetUser() user: RequestUser) {
+    return this.notificationService.markAllAsRead(user.userId);
   }
 
   @Delete(':id')
   @Roles(RoleName.CLIENT, RoleName.LOGISTICIAN, RoleName.ADMIN)
-  remove(@Param('id') id: string, @Req() req: any) {
-    return this.notificationService.remove(id, req.user.userId);
+  remove(@Param('id') id: string, @GetUser() user: RequestUser) {
+    return this.notificationService.remove(id, user.userId);
   }
 
   @Delete(':id/admin')

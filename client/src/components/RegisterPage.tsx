@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { authService } from '../services/auth.service';
-import api from '../api/api';
+import { userService, companyService } from '../services/admin.service';
 import { useAuth } from '../context/AuthContext';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -102,9 +102,8 @@ const RegisterPage: React.FC = () => {
       return;
     }
     try {
-      const companyResponse = await api.post('/company', data);
-      const companyId = companyResponse.data.id;
-      await api.patch('/user/me', { companyId });
+      const company = await companyService.create(data);
+      await userService.updateMe({ companyId: company.id });
       // Force refresh session to get the new companyId in AuthContext
       window.location.href = '/client/dashboard';
     } catch (err: any) {

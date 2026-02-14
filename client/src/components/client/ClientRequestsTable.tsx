@@ -35,7 +35,7 @@ const ClientRequestsTable: React.FC = () => {
     fetchRequests();
   }, []);
 
-  const getStatusColor = (status: string) => {
+  const getStatusColor = (status: string): 'info' | 'warning' | 'success' | 'error' | 'default' => {
     switch (status) {
       case 'Новая': return 'info';
       case 'В обработке': return 'warning';
@@ -82,7 +82,7 @@ const ClientRequestsTable: React.FC = () => {
                 <TableCell>
                   <Chip
                     label={request.status.name}
-                    color={getStatusColor(request.status.name) as any}
+                    color={getStatusColor(request.status.name)}
                     size="small"
                   />
                 </TableCell>

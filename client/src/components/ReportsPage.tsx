@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import api from '../api/api';
+import type { Kpis } from '../services/reports.service';
+import { reportsService } from '../services/reports.service';
 import {
   Box,
   Typography,
@@ -24,13 +25,6 @@ import {
   Cell,
 } from 'recharts';
 
-interface Kpis {
-  onTimeDeliveryRate: number;
-  vehicleUtilizationRate: number;
-  averageCostPerKm: number;
-  totalShipments: number;
-  totalVehicles: number;
-}
 
 const ReportsPage: React.FC = () => {
   const [kpis, setKpis] = useState<Kpis | null>(null);
@@ -40,8 +34,8 @@ const ReportsPage: React.FC = () => {
   useEffect(() => {
     const fetchKpis = async () => {
       try {
-        const res = await api.get('/reports/kpi');
-        setKpis(res.data);
+        const data = await reportsService.getKpis();
+        setKpis(data);
       } catch (err) {
         setError('Failed to load analytical data');
       } finally {

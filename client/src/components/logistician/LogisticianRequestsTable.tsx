@@ -38,7 +38,7 @@ const LogisticianRequestsTable: React.FC = () => {
     }
   };
 
-  const getStatusColor = (status: string) => {
+  const getStatusColor = (status: string): 'info' | 'warning' | 'success' | 'error' | 'default' => {
     switch (status) {
       case 'Новая': return 'info';
       case 'В обработке': return 'warning';
@@ -82,7 +82,7 @@ const LogisticianRequestsTable: React.FC = () => {
                 {request.pickupAddress.city} → {request.deliveryAddress.city}
               </TableCell>
               <TableCell>
-                <Chip label={request.status.name} color={getStatusColor(request.status.name) as any} size="small" />
+                <Chip label={request.status.name} color={getStatusColor(request.status.name)} size="small" />
               </TableCell>
               <TableCell>
                 {request.status.name === 'Новая' && (

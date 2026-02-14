@@ -30,7 +30,7 @@ export class ShipmentMilestone {
   @Exclude()
   @ManyToOne('Shipment', 'milestones', { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'shipment_id' })
-  shipment: any;
+  shipment: Shipment;
 
   @Column({
     type: 'enum',

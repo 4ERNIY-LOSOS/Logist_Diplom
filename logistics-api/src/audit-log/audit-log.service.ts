@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { AuditLog } from './entities/audit-log.entity';
+import { User } from '../user/entities/user.entity';
 
 @Injectable()
 export class AuditLogService {
@@ -17,8 +18,11 @@ export class AuditLogService {
     entityId: string;
     details?: object;
   }) {
+    const user = new User();
+    user.id = data.userId;
+
     const auditLog = this.auditLogRepository.create({
-      user: { id: data.userId } as any,
+      user: user,
       actionType: data.actionType,
       entityName: data.entityName,
       entityId: data.entityId,

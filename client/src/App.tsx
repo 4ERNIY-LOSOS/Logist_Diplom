@@ -13,7 +13,8 @@ import LoginPage from './components/LoginPage';
 import RegisterPage from './components/RegisterPage';
 import VerifyEmail from './components/VerifyEmail';
 import CompleteProfile from './components/CompleteProfile';
-import { Role } from './types';
+import ErrorBoundary from './components/ErrorBoundary';
+import { RoleName } from './types';
 
 // Feature Components
 import ClientDashboard from './components/client/ClientDashboard';
@@ -58,15 +59,19 @@ function App() {
           <Route path="/register" element={<RegisterPage />} />
           <Route path="/verify-email" element={<VerifyEmail />} />
           <Route path="/complete-profile" element={
-            <ProtectedRoute allowedRoles={[Role.CLIENT]}>
-              <CompleteProfile />
+            <ProtectedRoute allowedRoles={[RoleName.CLIENT]}>
+              <ErrorBoundary>
+                <CompleteProfile />
+              </ErrorBoundary>
             </ProtectedRoute>
           } />
           <Route
             path="/"
             element={
               <ProtectedRoute>
-                <MainLayout />
+                <ErrorBoundary>
+                  <MainLayout />
+                </ErrorBoundary>
               </ProtectedRoute>
             }
           >
@@ -76,7 +81,7 @@ function App() {
             <Route
               path="admin/*"
               element={
-                <ProtectedRoute allowedRoles={[Role.ADMIN]}>
+                <ProtectedRoute allowedRoles={[RoleName.ADMIN]}>
                   <AdminDashboard />
                 </ProtectedRoute>
               }
@@ -86,7 +91,7 @@ function App() {
             <Route
               path="logistician/*"
               element={
-                <ProtectedRoute allowedRoles={[Role.LOGISTICIAN]}>
+                <ProtectedRoute allowedRoles={[RoleName.LOGISTICIAN]}>
                   <Routes>
                     <Route path="dashboard" element={<LogisticianDashboard />} />
                     <Route path="shipments" element={<LogisticianDashboard />} />
@@ -101,7 +106,7 @@ function App() {
             <Route
               path="client/*"
               element={
-                <ProtectedRoute allowedRoles={[Role.CLIENT]}>
+                <ProtectedRoute allowedRoles={[RoleName.CLIENT]}>
                   <Routes>
                     <Route path="dashboard" element={<ClientDashboard />} />
                     <Route path="requests" element={<ClientDashboard />} />
@@ -123,9 +128,9 @@ function App() {
 const Home: React.FC = () => {
   const { user } = useAuth();
 
-  if (user?.role === Role.ADMIN) return <Navigate to="/admin" replace />;
-  if (user?.role === Role.LOGISTICIAN) return <Navigate to="/logistician/dashboard" replace />;
-  if (user?.role === Role.CLIENT) {
+  if (user?.role === RoleName.ADMIN) return <Navigate to="/admin" replace />;
+  if (user?.role === RoleName.LOGISTICIAN) return <Navigate to="/logistician/dashboard" replace />;
+  if (user?.role === RoleName.CLIENT) {
     if (!user.companyId) return <Navigate to="/complete-profile" replace />;
     return <Navigate to="/client/dashboard" replace />;
   }

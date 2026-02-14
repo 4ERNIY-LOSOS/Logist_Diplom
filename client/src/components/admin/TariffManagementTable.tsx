@@ -23,24 +23,15 @@ import {
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import AddIcon from '@mui/icons-material/Add';
-import api from '../../api/api';
-
-interface Tariff {
-  id: string;
-  name: string;
-  costPerKm: number;
-  costPerKg: number;
-  costPerM3: number;
-  baseFee: number;
-  isActive: boolean;
-}
+import { tariffService } from '../../services/tariff.service';
+import type { Tariff } from '../../services/tariff.service';
 
 export const TariffManagementTable: React.FC = () => {
   const [tariffs, setTariffs] = useState<Tariff[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [openDialog, setOpenDialog] = useState(false);
-  const [currentTariff, setCurrentTariff] = useState<Tariff | null>(null);
+  const [currentTariff, setCurrentTariff] = useState<Partial<Tariff> | null>(null);
   const [isNewTariff, setIsNewTariff] = useState(false);
 
   useEffect(() => {
@@ -50,8 +41,8 @@ export const TariffManagementTable: React.FC = () => {
   const fetchTariffs = async () => {
     setLoading(true);
     try {
-      const response = await api.get<Tariff[]>('/tariff');
-      setTariffs(response.data);
+      const data = await tariffService.getAll();
+      setTariffs(data);
     } catch (err) {
       setError('Failed to fetch tariffs.');
       console.error(err);
@@ -82,15 +73,15 @@ export const TariffManagementTable: React.FC = () => {
     if (!currentTariff) return;
     try {
       if (isNewTariff) {
-        await api.post('/tariff', {
+        await tariffService.create({
             ...currentTariff,
             costPerKm: Number(currentTariff.costPerKm),
             costPerKg: Number(currentTariff.costPerKg),
             costPerM3: Number(currentTariff.costPerM3),
             baseFee: Number(currentTariff.baseFee),
         });
-      } else {
-        await api.patch(`/tariff/${currentTariff.id}`, {
+      } else if (currentTariff.id) {
+        await tariffService.update(currentTariff.id, {
             ...currentTariff,
             costPerKm: Number(currentTariff.costPerKm),
             costPerKg: Number(currentTariff.costPerKg),
@@ -109,7 +100,7 @@ export const TariffManagementTable: React.FC = () => {
   const handleDeleteTariff = async (tariffId: string) => {
     if (window.confirm('Вы уверены, что хотите удалить этот тариф?')) {
       try {
-        await api.delete(`/tariff/${tariffId}`);
+        await tariffService.delete(tariffId);
         fetchTariffs();
       } catch (err) {
         setError('Failed to delete tariff.');
@@ -166,7 +157,7 @@ export const TariffManagementTable: React.FC = () => {
                     const originalIsActive = tariff.isActive;
                     setTariffs(prev => prev.map(t => t.id === tariff.id ? { ...t, isActive: e.target.checked } : t));
                     try {
-                      await api.patch(`/tariff/${tariff.id}`, { isActive: e.target.checked });
+                      await tariffService.update(tariff.id, { isActive: e.target.checked });
                     } catch (err) {
                       setError('Failed to update tariff status.');
                       console.error(err);

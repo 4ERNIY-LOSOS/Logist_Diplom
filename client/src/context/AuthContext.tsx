@@ -1,5 +1,5 @@
 import React, { createContext, useState, useContext, useEffect, useCallback } from 'react';
-import { Role } from '../types';
+import { RoleName } from '../types';
 import type { AuthUser } from '../types';
 import { authService } from '../services/auth.service';
 
@@ -54,9 +54,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     login,
     logout,
     isAuthenticated: !!user,
-    isAdmin: user?.role === Role.ADMIN,
-    isLogistician: user?.role === Role.LOGISTICIAN,
-    isClient: user?.role === Role.CLIENT,
+    isAdmin: user?.role === RoleName.ADMIN,
+    isLogistician: user?.role === RoleName.LOGISTICIAN,
+    isClient: user?.role === RoleName.CLIENT,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

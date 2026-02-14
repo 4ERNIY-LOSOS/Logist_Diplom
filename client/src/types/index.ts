@@ -1,10 +1,10 @@
-export const Role = {
+export const RoleName = {
   ADMIN: 'ADMIN',
   LOGISTICIAN: 'LOGISTICIAN',
   CLIENT: 'CLIENT',
 } as const;
 
-export type Role = (typeof Role)[keyof typeof Role];
+export type RoleName = (typeof RoleName)[keyof typeof RoleName];
 
 export interface User {
   id: string;
@@ -15,16 +15,24 @@ export interface User {
   phone?: string;
   isActive: boolean;
   isEmailVerified: boolean;
-  role: Role;
-  companyId?: string;
+  role: {
+    id: string;
+    name: RoleName;
+  };
+  company?: Company;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface Role {
+  id: string;
+  name: string;
 }
 
 export interface AuthUser {
   userId: string;
   username: string;
-  role: Role;
+  role: RoleName;
   companyId?: string;
 }
 
@@ -34,6 +42,7 @@ export interface Company {
   taxId: string;
   phone?: string;
   email?: string;
+  address?: string;
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
@@ -103,6 +112,7 @@ export interface Driver {
   licenseNumber: string;
   phone?: string;
   status: 'AVAILABLE' | 'BUSY' | 'ON_LEAVE';
+  isAvailable: boolean;
 }
 
 export interface VehicleType {
@@ -118,6 +128,7 @@ export interface Vehicle {
   payloadCapacity: number;
   volumeCapacity: number;
   status: 'AVAILABLE' | 'BUSY' | 'MAINTENANCE';
+  isAvailable: boolean;
   type: VehicleType;
 }
 
@@ -131,6 +142,18 @@ export interface Shipment {
   driver: Driver;
   vehicle: Vehicle;
   status: ShipmentStatus;
+  ltlShipment?: LtlShipment;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface LtlShipment {
+  id: string;
+  voyageCode: string;
+  departureDate: string;
+  arrivalDate: string;
+  status: string;
+  consolidatedWeight: number;
+  consolidatedVolume: number;
+  shipments: Shipment[];
 }

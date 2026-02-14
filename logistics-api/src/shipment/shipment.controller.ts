@@ -8,7 +8,6 @@ import {
   Delete,
   UseGuards,
   ParseUUIDPipe,
-  Req,
 } from '@nestjs/common';
 import { ShipmentService } from './shipment.service';
 import { MilestoneType } from './entities/shipment-milestone.entity';
@@ -19,6 +18,8 @@ import { AuthGuard } from '@nestjs/passport';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { RoleName } from '../auth/enums/role-name.enum';
+import { GetUser } from '../auth/decorators/get-user.decorator';
+import type { RequestUser } from '../auth/interfaces/request-user.interface';
 
 @Controller('shipment')
 @UseGuards(AuthGuard('jwt'), RolesGuard)
@@ -42,7 +43,7 @@ export class ShipmentController {
   addMilestone(
     @Param('id', ParseUUIDPipe) id: string,
     @Body('type') type: MilestoneType,
-    @Body('details') details: any,
+    @Body('details') details: { location?: string; latitude?: number; longitude?: number; notes?: string },
   ) {
     return this.shipmentService.addMilestone(id, type, details);
   }
@@ -58,14 +59,14 @@ export class ShipmentController {
 
   @Get()
   @Roles(RoleName.ADMIN, RoleName.LOGISTICIAN, RoleName.CLIENT)
-  findAll(@Req() req) {
-    return this.shipmentService.findAll(req.user);
+  findAll(@GetUser() user: RequestUser) {
+    return this.shipmentService.findAll(user);
   }
 
   @Get(':id')
   @Roles(RoleName.ADMIN, RoleName.LOGISTICIAN, RoleName.CLIENT)
-  findOne(@Param('id', ParseUUIDPipe) id: string, @Req() req) {
-    return this.shipmentService.findOne(id, req.user);
+  findOne(@Param('id', ParseUUIDPipe) id: string, @GetUser() user: RequestUser) {
+    return this.shipmentService.findOne(id, user);
   }
 
   @Patch(':id')

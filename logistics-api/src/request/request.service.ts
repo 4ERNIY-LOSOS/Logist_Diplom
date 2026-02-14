@@ -16,6 +16,7 @@ import { CargoType } from '../cargo/entities/cargo-type.entity';
 import { RoleName } from '../auth/enums/role-name.enum';
 import { UserService } from '../user/user.service';
 import { PricingEngineService } from '../pricing/pricing-engine.service';
+import { RequestUser } from '../auth/interfaces/request-user.interface';
 
 @Injectable()
 export class RequestService {
@@ -34,7 +35,7 @@ export class RequestService {
 
   async create(
     createRequestDto: CreateRequestDto,
-    reqUser: any,
+    reqUser: RequestUser,
   ): Promise<Request> {
     const user = await this.userService.findOne(reqUser.userId);
     const {
@@ -64,11 +65,10 @@ export class RequestService {
       );
     }
 
-    // Clients can only create requests for their own company
-    if (user.role.name === RoleName.CLIENT && !user.company) {
-      // Corrected condition
+    // Only users associated with a company can create requests.
+    if (!user.company) {
       throw new ForbiddenException(
-        'Only clients associated with a company can create requests.',
+        'You must be associated with a company to create requests.',
       );
     }
 
@@ -100,7 +100,7 @@ export class RequestService {
     try {
       const tempRequest = this.requestRepository.create({
           distanceKm: distanceKm || 1,
-          cargos: cargosWithTypes as any,
+          cargos: cargosWithTypes,
       });
       const calculation = await this.pricingEngineService.calculateRequestCost(tempRequest);
       preliminaryCost = calculation.preliminaryCost;
@@ -114,13 +114,13 @@ export class RequestService {
 
     const newRequest = this.requestRepository.create({
       ...rest,
-      pickupAddress,
-      deliveryAddress,
-      cargos: cargosWithTypes,
+      pickupAddress: pickupAddress as any,
+      deliveryAddress: deliveryAddress as any,
+      cargos: cargosWithTypes as any,
       createdByUser: user,
       company: user.company,
       status: initialStatus,
-      preliminaryCost: preliminaryCost, // Set calculated preliminary cost
+      preliminaryCost: preliminaryCost,
     });
 
     return this.requestRepository.save(newRequest);
@@ -130,7 +130,7 @@ export class RequestService {
     return this.requestStatusRepository.find();
   }
 
-  async findAll(reqUser: any): Promise<Request[]> {
+  async findAll(reqUser: RequestUser): Promise<Request[]> {
     const user = await this.userService.findOne(reqUser.userId);
     if (user.role.name === RoleName.CLIENT) {
       if (!user.company) {
@@ -156,11 +156,12 @@ export class RequestService {
         'cargos',
         'pickupAddress',
         'deliveryAddress',
+        'createdByUser',
       ],
     });
   }
 
-  async findOne(id: string, reqUser: any): Promise<Request> {
+  async findOne(id: string, reqUser: RequestUser): Promise<Request> {
     const user = await this.userService.findOne(reqUser.userId);
     const request = await this.requestRepository.findOne({
       where: { id },
@@ -193,7 +194,7 @@ export class RequestService {
   async update(
     id: string,
     updateRequestDto: UpdateRequestDto,
-    reqUser: any,
+    reqUser: RequestUser,
   ): Promise<Request> {
     const user = await this.userService.findOne(reqUser.userId); // Get full user to check role
     // findOne will throw a NotFoundException or ForbiddenException if the user doesn't have access
@@ -222,7 +223,7 @@ export class RequestService {
     return this.requestRepository.save(request);
   }
 
-  async remove(id: string, reqUser: any): Promise<void> {
+  async remove(id: string, reqUser: RequestUser): Promise<void> {
     // findOne will throw a NotFoundException or ForbiddenException if the user doesn't have access
     const request = await this.findOne(id, reqUser);
 

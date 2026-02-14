@@ -23,6 +23,7 @@ import { VehicleStatus } from '../vehicle/entities/vehicle.entity';
 import { ShipmentMilestone, MilestoneType } from './entities/shipment-milestone.entity';
 import { SchedulingService } from '../scheduling/scheduling.service';
 import { FinanceService } from '../finance/finance.service';
+import { RequestUser } from '../auth/interfaces/request-user.interface';
 
 @Injectable()
 export class ShipmentService {
@@ -180,7 +181,7 @@ export class ShipmentService {
       async (transactionalEntityManager) => {
         const shipment = await transactionalEntityManager.findOne(Shipment, {
           where: { id },
-          relations: ['driver', 'vehicle', 'status', 'request'],
+          relations: ['driver', 'vehicle', 'status', 'request', 'request.company'],
         });
 
         if (!shipment) {
@@ -305,10 +306,18 @@ export class ShipmentService {
     return this.shipmentStatusRepository.find();
   }
 
-  async findAll(reqUser: any) {
+  async findAll(reqUser: RequestUser) {
     const user = await this.userService.findOne(reqUser.userId);
     const findOptions = {
-      relations: ['request', 'request.company', 'driver', 'vehicle', 'status'],
+      relations: [
+        'request',
+        'request.company',
+        'request.pickupAddress',
+        'request.deliveryAddress',
+        'driver',
+        'vehicle',
+        'status'
+      ],
       where: {},
     };
 
@@ -322,11 +331,20 @@ export class ShipmentService {
     return this.shipmentRepository.find(findOptions);
   }
 
-  async findOne(id: string, reqUser: any) {
+  async findOne(id: string, reqUser: RequestUser) {
     const user = await this.userService.findOne(reqUser.userId);
     const shipment = await this.shipmentRepository.findOne({
       where: { id },
-      relations: ['request', 'request.company', 'driver', 'vehicle', 'status'],
+      relations: [
+        'request',
+        'request.company',
+        'request.pickupAddress',
+        'request.deliveryAddress',
+        'request.cargos',
+        'driver',
+        'vehicle',
+        'status'
+      ],
     });
 
     if (!shipment) {

@@ -48,23 +48,24 @@ export class Shipment {
   status: ShipmentStatus;
 
   // For LTL shipments
+  @Exclude()
   @ManyToOne('LtlShipment', 'shipments', {
     nullable: true,
     onDelete: 'SET NULL',
   })
   @JoinColumn({ name: 'ltl_shipment_id' })
-  ltlShipment: any | null;
+  ltlShipment: LtlShipment | null;
 
   @Exclude()
   @OneToMany('Document', 'shipment')
-  documents: any[];
+  documents: Document[];
 
   @Exclude()
   @OneToMany('GpsLog', 'shipment')
-  gpsLogs: any[];
+  gpsLogs: GpsLog[];
 
   @OneToMany('ShipmentMilestone', 'shipment')
-  milestones: any[];
+  milestones: ShipmentMilestone[];
 
   @Index()
   @Column({ type: 'timestamptz', name: 'planned_pickup_date' })

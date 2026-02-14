@@ -224,8 +224,9 @@ const CreateRequestForm: React.FC<CreateRequestFormProps> = ({ onSuccess, onCanc
                   <Grid size={{ xs: 12, sm: 3 }}>
                     <TextField select fullWidth label="Тип" {...register(`cargos.${index}.type` as const)} defaultValue="Обычный">
                       <MenuItem value="Обычный">Обычный</MenuItem>
-                      <MenuItem value="Опасный">Опасный</MenuItem>
+                      <MenuItem value="Опасный (ADR)">Опасный (ADR)</MenuItem>
                       <MenuItem value="Температурный">Температурный</MenuItem>
+                      <MenuItem value="Хрупкий">Хрупкий</MenuItem>
                     </TextField>
                   </Grid>
                   <Grid size={{ xs: 12, sm: 2 }}>

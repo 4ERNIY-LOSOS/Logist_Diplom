@@ -7,6 +7,7 @@ import {
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
+import { Exclude } from 'class-transformer';
 import { Shipment } from '../../shipment/entities/shipment.entity';
 
 export enum DriverStatus {
@@ -35,6 +36,7 @@ export class Driver {
   @Column({
     type: 'enum',
     enum: DriverStatus,
+    enumName: 'drivers_status_enum',
     default: DriverStatus.AVAILABLE,
   })
   status: DriverStatus;
@@ -42,6 +44,7 @@ export class Driver {
   @Column({ name: 'is_available', default: true })
   isAvailable: boolean;
 
+  @Exclude()
   @OneToMany(() => Shipment, (shipment) => shipment.driver)
   shipments: Shipment[];
 

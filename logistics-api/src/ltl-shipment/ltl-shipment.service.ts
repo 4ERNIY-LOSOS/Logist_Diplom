@@ -15,6 +15,7 @@ import { LtlShipmentStatus } from './enums/ltl-shipment-status.enum';
 import { Document, DocumentType } from '../document/entities/document.entity';
 import { UserService } from '../user/user.service';
 import { RoleName } from '../auth/enums/role-name.enum';
+import { RequestUser } from '../auth/interfaces/request-user.interface';
 
 @Injectable()
 export class LtlShipmentService {
@@ -45,7 +46,7 @@ export class LtlShipmentService {
 
   async create(
     createLtlShipmentDto: CreateLtlShipmentDto,
-    user: any,
+    user: RequestUser,
   ): Promise<LtlShipment> {
     const { shipmentIds, ...rest } = createLtlShipmentDto;
     const logistician = await this.userService.findOne(user.userId);
@@ -201,7 +202,7 @@ export class LtlShipmentService {
   async update(
     id: string,
     updateLtlShipmentDto: UpdateLtlShipmentDto,
-    user: any,
+    user: RequestUser,
   ): Promise<LtlShipment> {
     const logistician = await this.userService.findOne(user.userId);
 
@@ -314,7 +315,7 @@ export class LtlShipmentService {
     );
   }
 
-  async remove(id: string, user: any): Promise<void> {
+  async remove(id: string, user: RequestUser): Promise<void> {
     const logistician = await this.userService.findOne(user.userId);
     
     await this.entityManager.transaction(
@@ -360,7 +361,7 @@ export class LtlShipmentService {
 
         if (ltlShipment.shipments && ltlShipment.shipments.length > 0) {
           for (const shipment of ltlShipment.shipments) {
-            shipment.ltlShipment = null as any;
+            shipment.ltlShipment = null;
             shipment.status = plannedStatus;
           }
           await transactionalEntityManager.save(ltlShipment.shipments);

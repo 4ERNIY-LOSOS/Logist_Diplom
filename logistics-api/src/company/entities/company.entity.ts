@@ -34,7 +34,7 @@ export class Company {
 
   @Exclude()
   @OneToMany('User', 'company')
-  users: any[];
+  users: User[];
 
   @CreateDateColumn({ type: 'timestamptz', name: 'created_at' })
   createdAt: Date;

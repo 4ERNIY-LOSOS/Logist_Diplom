@@ -84,7 +84,7 @@ const ProcessRequestForm: React.FC = () => {
         plannedPickupDate: new Date(data.plannedPickupDate).toISOString(),
         plannedDeliveryDate: new Date(data.plannedDeliveryDate).toISOString(),
         finalCost: data.finalCost,
-      });
+      } as any);
 
       navigate('/logistician/dashboard');
     } catch (err: any) {

@@ -8,13 +8,14 @@ import {
   Res,
   Get,
   UseGuards,
-  Req,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import type { Response, Request } from 'express';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { CreateUserDto } from '../user/dto/create-user.dto';
 import { LoginDto } from './dto/login.dto';
+import { GetUser } from './decorators/get-user.decorator';
+import type { RequestUser } from './interfaces/request-user.interface';
 
 @Controller('auth')
 export class AuthController {
@@ -68,8 +69,8 @@ export class AuthController {
 
   @UseGuards(JwtAuthGuard)
   @Get('me')
-  async getProfile(@Req() req: any) {
-    return req.user;
+  async getProfile(@GetUser() user: RequestUser) {
+    return user;
   }
 
   @HttpCode(HttpStatus.OK)

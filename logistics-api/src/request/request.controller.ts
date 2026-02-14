@@ -7,7 +7,6 @@ import {
   Param,
   Delete,
   UseGuards,
-  Req,
   ParseUUIDPipe,
 } from '@nestjs/common';
 import { RequestService } from './request.service';
@@ -17,6 +16,8 @@ import { AuthGuard } from '@nestjs/passport';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { RoleName } from '../auth/enums/role-name.enum';
+import { GetUser } from '../auth/decorators/get-user.decorator';
+import type { RequestUser } from '../auth/interfaces/request-user.interface';
 
 @Controller('request')
 @UseGuards(AuthGuard('jwt'), RolesGuard)
@@ -31,20 +32,20 @@ export class RequestController {
 
   @Post()
   @Roles(RoleName.CLIENT)
-  create(@Body() createRequestDto: CreateRequestDto, @Req() req) {
-    return this.requestService.create(createRequestDto, req.user);
+  create(@Body() createRequestDto: CreateRequestDto, @GetUser() user: RequestUser) {
+    return this.requestService.create(createRequestDto, user);
   }
 
   @Get()
   @Roles(RoleName.ADMIN, RoleName.LOGISTICIAN, RoleName.CLIENT)
-  findAll(@Req() req) {
-    return this.requestService.findAll(req.user);
+  findAll(@GetUser() user: RequestUser) {
+    return this.requestService.findAll(user);
   }
 
   @Get(':id')
   @Roles(RoleName.ADMIN, RoleName.LOGISTICIAN, RoleName.CLIENT)
-  findOne(@Param('id', ParseUUIDPipe) id: string, @Req() req) {
-    return this.requestService.findOne(id, req.user);
+  findOne(@Param('id', ParseUUIDPipe) id: string, @GetUser() user: RequestUser) {
+    return this.requestService.findOne(id, user);
   }
 
   @Patch(':id')
@@ -52,14 +53,14 @@ export class RequestController {
   update(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() updateRequestDto: UpdateRequestDto,
-    @Req() req,
+    @GetUser() user: RequestUser,
   ) {
-    return this.requestService.update(id, updateRequestDto, req.user);
+    return this.requestService.update(id, updateRequestDto, user);
   }
 
   @Delete(':id')
   @Roles(RoleName.ADMIN, RoleName.LOGISTICIAN)
-  remove(@Param('id', ParseUUIDPipe) id: string, @Req() req) {
-    return this.requestService.remove(id, req.user);
+  remove(@Param('id', ParseUUIDPipe) id: string, @GetUser() user: RequestUser) {
+    return this.requestService.remove(id, user);
   }
 }

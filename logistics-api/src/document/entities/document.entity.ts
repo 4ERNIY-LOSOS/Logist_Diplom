@@ -38,6 +38,7 @@ export class Document {
   @Column({
     type: 'enum',
     enum: DocumentType,
+    enumName: 'documents_type_enum',
     default: DocumentType.OTHER,
   })
   type: DocumentType;

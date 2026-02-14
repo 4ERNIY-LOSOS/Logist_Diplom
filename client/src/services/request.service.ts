@@ -1,5 +1,5 @@
 import api from '../api/api';
-import type { LogisticRequest } from '../types';
+import type { LogisticRequest, RequestStatus } from '../types';
 
 export const requestService = {
   async getAll(): Promise<LogisticRequest[]> {
@@ -12,11 +12,13 @@ export const requestService = {
     return response.data;
   },
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   async create(data: any): Promise<LogisticRequest> {
     const response = await api.post('/request', data);
     return response.data;
   },
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   async update(id: string, data: any): Promise<LogisticRequest> {
     const response = await api.patch(`/request/${id}`, data);
     return response.data;
@@ -26,7 +28,7 @@ export const requestService = {
     await api.delete(`/request/${id}`);
   },
 
-  async getStatuses(): Promise<any[]> {
+  async getStatuses(): Promise<RequestStatus[]> {
     const response = await api.get('/request/statuses'); // Adjust based on actual backend endpoint
     return response.data;
   }

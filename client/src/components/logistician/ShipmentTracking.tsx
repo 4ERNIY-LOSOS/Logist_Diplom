@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { shipmentService } from '../../services/shipment.service';
 import api from '../../api/api';
 import {
   Box,
@@ -21,6 +22,7 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 
 // Fix for default Leaflet icon not showing up
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 delete (L.Icon.Default.prototype as any)._getIconUrl;
 L.Icon.Default.mergeOptions({
   iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
@@ -47,8 +49,8 @@ const ShipmentTracking: React.FC = () => {
   useEffect(() => {
     const fetchShipments = async () => {
       try {
-        const res = await api.get('/shipment');
-        setShipments(res.data.filter((s: any) => s.status.name === 'В пути'));
+        const data = await shipmentService.getAll();
+        setShipments(data.filter((s) => s.status.name === 'В пути'));
       } catch (err) {
         console.error(err);
       } finally {
@@ -59,7 +61,7 @@ const ShipmentTracking: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    let interval: any;
+    let interval: ReturnType<typeof setInterval> | undefined;
     if (selectedShipmentId) {
       const fetchCoords = async () => {
         try {
@@ -79,8 +81,12 @@ const ShipmentTracking: React.FC = () => {
 
   if (loading) return <CircularProgress />;
 
+  // React 19 compatibility casts
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const MapContainerAny = MapContainer as any;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const TileLayerAny = TileLayer as any;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const MarkerAny = Marker as any;
 
   return (

@@ -27,8 +27,8 @@ export class AllExceptionsFilter implements ExceptionFilter {
         ? exception.getResponse()
         : { message: (exception as Error).message || 'Internal server error' };
 
-    const message = typeof exceptionResponse === 'object'
-      ? (exceptionResponse as any).message || JSON.stringify(exceptionResponse)
+    const message = typeof exceptionResponse === 'object' && exceptionResponse !== null
+      ? (exceptionResponse as Record<string, unknown>).message || JSON.stringify(exceptionResponse)
       : exceptionResponse;
 
     // OWASP: Do not expose stack traces to the client in production

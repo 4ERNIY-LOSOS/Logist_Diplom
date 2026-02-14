@@ -4,7 +4,7 @@ import {
   ConflictException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Not } from 'typeorm';
+import { Repository, Not, FindOptionsWhere } from 'typeorm';
 import { CreateVehicleDto } from './dto/create-vehicle.dto';
 import { UpdateVehicleDto } from './dto/update-vehicle.dto';
 import { Vehicle, VehicleStatus } from './entities/vehicle.entity';
@@ -59,7 +59,7 @@ export class VehicleService {
     const { isAvailable, status, page = 1, limit = 10 } = options;
     const skip = (page - 1) * limit;
 
-    const where: any = {};
+    const where: FindOptionsWhere<Vehicle> = {};
     if (isAvailable !== undefined) {
       where.isAvailable = isAvailable;
     }
