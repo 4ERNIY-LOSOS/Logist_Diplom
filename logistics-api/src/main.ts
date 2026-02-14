@@ -1,14 +1,20 @@
 import { NestFactory, Reflector } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
-import { ValidationPipe, ClassSerializerInterceptor } from '@nestjs/common'; // Import ValidationPipe
+import { ValidationPipe, ClassSerializerInterceptor, Logger } from '@nestjs/common'; // Import ValidationPipe
 import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
 import cookieParser from 'cookie-parser';
+import helmet from 'helmet';
 
 async function bootstrap() {
+  const logger = new Logger('Bootstrap');
   process.env.TZ = 'UTC'; // Set timezone for the Node.js process
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create(AppModule, {
+    logger: ['error', 'warn', 'log', 'debug', 'verbose'],
+  });
 
+  // OWASP: Use Helmet to set secure HTTP headers
+  app.use(helmet());
   app.use(cookieParser());
 
   app.useGlobalPipes(
@@ -44,13 +50,24 @@ async function bootstrap() {
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api', app, document); // Доступно по /api
 
-  // Enable CORS
+  // OWASP: Strict CORS configuration
   app.enableCors({
-    origin: ['http://localhost:5173', 'http://localhost:3001'], // Allow frontend dev servers
+    origin: (origin, callback) => {
+      const allowedOrigins = ['http://localhost:5173', 'http://localhost:3001'];
+      if (!origin || allowedOrigins.indexOf(origin) !== -1) {
+        callback(null, true);
+      } else {
+        logger.warn(`CORS blocked request from origin: ${origin}`);
+        callback(new Error('Not allowed by CORS'));
+      }
+    },
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
     credentials: true,
+    exposedHeaders: ['set-cookie'],
   });
 
-  await app.listen(3000);
+  const port = process.env.PORT || 3000;
+  await app.listen(port);
+  logger.log(`Application is running on: http://localhost:${port}/api`);
 }
 bootstrap();

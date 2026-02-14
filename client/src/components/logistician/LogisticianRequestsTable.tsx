@@ -64,8 +64,13 @@ const LogisticianRequestsTable: React.FC = () => {
           </TableRow>
         </TableHead>
         <TableBody>
-          {requests.map((request) => (
-            <TableRow key={request.id}>
+          {requests.length === 0 ? (
+            <TableRow>
+              <TableCell colSpan={5} align="center">Нет новых заявок для обработки</TableCell>
+            </TableRow>
+          ) : (
+            requests.map((request) => (
+              <TableRow key={request.id}>
               <TableCell>
                 <Typography variant="body2" fontWeight="medium">{request.company.name}</Typography>
                 <Typography variant="caption" color="text.secondary">{request.createdByUser.username}</Typography>
@@ -91,8 +96,9 @@ const LogisticianRequestsTable: React.FC = () => {
                   </Button>
                 )}
               </TableCell>
-            </TableRow>
-          ))}
+              </TableRow>
+            ))
+          )}
         </TableBody>
       </Table>
     </TableContainer>

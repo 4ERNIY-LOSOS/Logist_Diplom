@@ -10,7 +10,7 @@ import { Request, Response } from 'express';
 
 @Catch()
 export class AllExceptionsFilter implements ExceptionFilter {
-  private readonly logger = new Logger(AllExceptionsFilter.name);
+  private readonly logger = new Logger('AllExceptionsFilter');
 
   catch(exception: unknown, host: ArgumentsHost) {
     const ctx = host.switchToHttp();
@@ -22,21 +22,36 @@ export class AllExceptionsFilter implements ExceptionFilter {
         ? exception.getStatus()
         : HttpStatus.INTERNAL_SERVER_ERROR;
 
-    const message =
+    const exceptionResponse =
       exception instanceof HttpException
         ? exception.getResponse()
-        : 'Internal server error';
+        : { message: (exception as Error).message || 'Internal server error' };
 
-    this.logger.error(
-      `Http Status: ${status} Error Message: ${JSON.stringify(message)}`,
-      exception instanceof Error ? exception.stack : '',
-    );
+    const message = typeof exceptionResponse === 'object'
+      ? (exceptionResponse as any).message || JSON.stringify(exceptionResponse)
+      : exceptionResponse;
 
-    response.status(status).json({
+    // OWASP: Do not expose stack traces to the client in production
+    const isProduction = process.env.NODE_ENV === 'production';
+    const errorResponse = {
       statusCode: status,
       timestamp: new Date().toISOString(),
       path: request.url,
-      message: typeof message === 'object' ? (message as any).message || message : message,
-    });
+      message: message,
+      ...(isProduction ? {} : { stack: (exception as Error).stack }),
+    };
+
+    if (status === HttpStatus.INTERNAL_SERVER_ERROR) {
+      this.logger.error(
+        `Critical Error [${request.method} ${request.url}]: ${message}`,
+        (exception as Error).stack,
+      );
+    } else {
+      this.logger.warn(
+        `Client Error [${request.method} ${request.url}]: ${JSON.stringify(message)}`,
+      );
+    }
+
+    response.status(status).json(errorResponse);
   }
 }

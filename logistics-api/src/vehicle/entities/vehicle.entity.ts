@@ -24,7 +24,7 @@ export class Vehicle {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @ManyToOne(() => VehicleType, (type) => type.vehicles)
+  @ManyToOne(() => VehicleType, (type) => type.vehicles, { onDelete: 'RESTRICT' })
   @JoinColumn({ name: 'type_id' })
   type: VehicleType;
 

@@ -4,6 +4,7 @@ import { RequestService } from './request.service';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Request } from './entities/request.entity';
 import { RequestStatus } from './entities/request-status.entity';
+import { CargoType } from '../cargo/entities/cargo-type.entity';
 import { UserService } from '../user/user.service';
 import { PricingEngineService } from '../pricing/pricing-engine.service';
 
@@ -17,6 +18,10 @@ describe('RequestController', () => {
         RequestService,
         {
           provide: getRepositoryToken(Request),
+          useValue: {},
+        },
+        {
+          provide: getRepositoryToken(CargoType),
           useValue: {},
         },
         {

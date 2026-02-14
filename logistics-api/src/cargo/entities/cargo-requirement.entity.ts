@@ -1,4 +1,4 @@
-import { Column, Entity, ManyToOne, PrimaryGeneratedColumn } from 'typeorm';
+import { Column, Entity, JoinColumn, ManyToOne, PrimaryGeneratedColumn } from 'typeorm';
 import { Cargo } from './cargo.entity';
 
 @Entity('cargo_requirements')
@@ -16,5 +16,6 @@ export class CargoRequirement {
   surchargeAmount: number; // Flat fee for this requirement
 
   @ManyToOne('Cargo', 'requirements', { onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'cargo_id' })
   cargo: any;
 }
