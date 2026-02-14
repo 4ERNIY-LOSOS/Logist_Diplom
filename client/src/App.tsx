@@ -1,47 +1,36 @@
+import React, { useState, useEffect } from 'react';
+import { Routes, Route, Navigate } from 'react-router-dom';
+import { ThemeProvider } from '@mui/material/styles';
+import CssBaseline from '@mui/material/CssBaseline';
+import { Snackbar, Alert } from '@mui/material';
+
 import './App.css';
+import theme from './theme';
 import { AuthProvider, useAuth } from './context/AuthContext';
-import LoginPage from './components/LoginPage';
+import ProtectedRoute from './components/ProtectedRoute';
 import MainLayout from './components/MainLayout';
-import { Routes, Route, useNavigate } from 'react-router-dom';
-import React, { useEffect } from 'react';
+import LoginPage from './components/LoginPage';
+import RegisterPage from './components/RegisterPage';
+import { Role } from './types';
+
+// Feature Components
 import ClientDashboard from './components/client/ClientDashboard';
 import LogisticianDashboard from './components/logistician/LogisticianDashboard';
 import ProcessRequestForm from './components/logistician/ProcessRequestForm';
-import RegisterPage from './components/RegisterPage';
-import { ThemeProvider } from '@mui/material/styles';
-import CssBaseline from '@mui/material/CssBaseline';
-import theme from './theme';
-import { AdminDashboard } from './components/admin/AdminDashboard'; // Import the new AdminDashboard
-import ReportsPage from './components/ReportsPage'; // Import ReportsPage
+import { AdminDashboard } from './components/admin/AdminDashboard';
+import ReportsPage from './components/ReportsPage';
 import LtlManagement from './components/logistician/LtlManagement';
-import { Snackbar, Alert } from '@mui/material';
 
-// ProtectedRoute component
-interface ProtectedRouteProps {
-  children: React.ReactNode;
-}
-
-const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
-  const { token } = useAuth();
-  const navigate = useNavigate();
+function App() {
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!token) {
-      navigate('/login');
-    }
-  }, [token, navigate]);
-
-  return token ? <>{children}</> : null;
-};
-
-// Root App component
-function App() {
-  const [error, setError] = React.useState<string | null>(null);
-
-  React.useEffect(() => {
     const handleGlobalError = (event: PromiseRejectionEvent) => {
-        const message = event.reason?.response?.data?.message || event.reason?.message || 'An unexpected error occurred';
-        setError(message);
+      const message =
+        event.reason?.message ||
+        event.reason?.response?.data?.message ||
+        'Произошла непредвиденная ошибка';
+      setError(message);
     };
     window.addEventListener('unhandledrejection', handleGlobalError);
     return () => window.removeEventListener('unhandledrejection', handleGlobalError);
@@ -51,14 +40,21 @@ function App() {
     <ThemeProvider theme={theme}>
       <CssBaseline />
       <AuthProvider>
-        <Snackbar open={!!error} autoHideDuration={6000} onClose={() => setError(null)} anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}>
-            <Alert onClose={() => setError(null)} severity="error" sx={{ width: '100%' }}>
-                {error}
-            </Alert>
+        <Snackbar
+          open={!!error}
+          autoHideDuration={6000}
+          onClose={() => setError(null)}
+          anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+        >
+          <Alert onClose={() => setError(null)} severity="error" sx={{ width: '100%' }}>
+            {error}
+          </Alert>
         </Snackbar>
+
         <Routes>
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
+
           <Route
             path="/"
             element={
@@ -67,23 +63,50 @@ function App() {
               </ProtectedRoute>
             }
           >
-            {/* Nested routes for different roles */}
             <Route index element={<Home />} />
-            <Route path="admin" element={<AdminDashboard />} /> {/* New admin route */}
-            <Route path="reports" element={<ReportsPage />} /> {/* New reports route */}
-            <Route path="logistician/dashboard" element={<LogisticianDashboard />} />
+
+            {/* Admin Routes */}
             <Route
-              path="logistician/process-request/:requestId"
-              element={<ProcessRequestForm />}
+              path="admin/*"
+              element={
+                <ProtectedRoute allowedRoles={[Role.ADMIN]}>
+                  <AdminDashboard />
+                </ProtectedRoute>
+              }
             />
+
+            {/* Logistician Routes */}
             <Route
-              path="logistician/shipments"
-              element={<LogisticianDashboard />}
+              path="logistician/*"
+              element={
+                <ProtectedRoute allowedRoles={[Role.LOGISTICIAN]}>
+                  <Routes>
+                    <Route path="dashboard" element={<LogisticianDashboard />} />
+                    <Route path="shipments" element={<LogisticianDashboard />} />
+                    <Route path="ltl" element={<LtlManagement />} />
+                    <Route path="process-request/:requestId" element={<ProcessRequestForm />} />
+                  </Routes>
+                </ProtectedRoute>
+              }
             />
-            <Route path="logistician/ltl" element={<LtlManagement />} />
-            <Route path="client/dashboard" element={<ClientDashboard />} />
-            <Route path="client/requests" element={<ClientDashboard />} />
+
+            {/* Client Routes */}
+            <Route
+              path="client/*"
+              element={
+                <ProtectedRoute allowedRoles={[Role.CLIENT]}>
+                  <Routes>
+                    <Route path="dashboard" element={<ClientDashboard />} />
+                    <Route path="requests" element={<ClientDashboard />} />
+                  </Routes>
+                </ProtectedRoute>
+              }
+            />
+
+            <Route path="reports" element={<ReportsPage />} />
           </Route>
+
+          <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </AuthProvider>
     </ThemeProvider>
@@ -91,15 +114,19 @@ function App() {
 }
 
 const Home: React.FC = () => {
-    const { user } = useAuth();
-    return (
-        <div style={{ textAlign: 'center', marginTop: '20px' }}>
-            <h2>Welcome to your dashboard, {user?.username}!</h2>
-            <p>Your role is: {user?.role}</p>
-            <p>Please use the navigation on the left to access different sections.</p>
-        </div>
-    );
-};
+  const { user } = useAuth();
 
+  if (user?.role === Role.ADMIN) return <Navigate to="/admin" replace />;
+  if (user?.role === Role.LOGISTICIAN) return <Navigate to="/logistician/dashboard" replace />;
+  if (user?.role === Role.CLIENT) return <Navigate to="/client/dashboard" replace />;
+
+  return (
+    <div style={{ textAlign: 'center', marginTop: '40px' }}>
+      <h2>Добро пожаловать в AXIS, {user?.username}!</h2>
+      <p>Ваша роль: {user?.role}</p>
+      <p>Используйте боковое меню для навигации.</p>
+    </div>
+  );
+};
 
 export default App;

@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import api from '../api/api';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import * as z from 'zod';
 import {
   Container,
   Box,
@@ -11,27 +13,36 @@ import {
   Card,
   CardContent,
   Alert,
+  CircularProgress,
 } from '@mui/material';
 
+const loginSchema = z.object({
+  username: z.string().min(3, 'Имя пользователя должно быть не менее 3 символов'),
+  password: z.string().min(5, 'Пароль должен быть не менее 5 символов'),
+});
+
+type LoginFormValues = z.infer<typeof loginSchema>;
+
 const LoginPage: React.FC = () => {
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const { login } = useAuth();
   const navigate = useNavigate();
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError(null);
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+  } = useForm<LoginFormValues>({
+    resolver: zodResolver(loginSchema),
+  });
 
+  const onSubmit = async (data: LoginFormValues) => {
+    setError(null);
     try {
-      const response = await api.post('/auth/login', { username, password });
-      login(response.data.access_token);
+      await login(data.username, data.password);
       navigate('/');
     } catch (err: any) {
-      setError(
-        err.response?.data?.message || 'Ошибка входа. Пожалуйста, проверьте ваши данные.',
-      );
+      setError(err.message || 'Ошибка входа. Пожалуйста, проверьте ваши данные.');
     }
   };
 
@@ -45,14 +56,14 @@ const LoginPage: React.FC = () => {
           alignItems: 'center',
         }}
       >
-        <Card sx={{ width: '100%', padding: 2 }}>
+        <Card sx={{ width: '100%', padding: 2, borderRadius: 2, boxShadow: 3 }}>
           <CardContent>
-            <Typography component="h1" variant="h5" align="center">
-              Вход в систему
+            <Typography component="h1" variant="h5" align="center" gutterBottom fontWeight="bold">
+              Вход в AXIS
             </Typography>
             <Box
               component="form"
-              onSubmit={handleSubmit}
+              onSubmit={handleSubmit(onSubmit)}
               noValidate
               sx={{ mt: 1 }}
             >
@@ -67,37 +78,40 @@ const LoginPage: React.FC = () => {
                 fullWidth
                 id="username"
                 label="Имя пользователя"
-                name="username"
+                {...register('username')}
+                error={!!errors.username}
+                helperText={errors.username?.message}
                 autoComplete="username"
                 autoFocus
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
+                disabled={isSubmitting}
               />
               <TextField
                 margin="normal"
                 required
                 fullWidth
-                name="password"
                 label="Пароль"
                 type="password"
                 id="password"
+                {...register('password')}
+                error={!!errors.password}
+                helperText={errors.password?.message}
                 autoComplete="current-password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                disabled={isSubmitting}
               />
               <Button
                 type="submit"
                 fullWidth
                 variant="contained"
-                sx={{ mt: 3, mb: 2 }}
+                sx={{ mt: 3, mb: 2, py: 1.5 }}
+                disabled={isSubmitting}
               >
-                Войти
+                {isSubmitting ? <CircularProgress size={24} color="inherit" /> : 'Войти'}
               </Button>
-              <Typography variant="body2" align="center">
+              <Typography variant="body2" align="center" sx={{ mt: 1 }}>
                 Новый клиент?{' '}
                 <Link
                   to="/register"
-                  style={{ textDecoration: 'none', color: 'inherit' }}
+                  style={{ textDecoration: 'none', color: '#1976d2', fontWeight: '500' }}
                 >
                   Зарегистрируйтесь здесь
                 </Link>

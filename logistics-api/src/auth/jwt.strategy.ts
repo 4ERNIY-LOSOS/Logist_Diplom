@@ -11,7 +11,12 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       throw new Error('JWT_SECRET is not set in the environment variables. Application cannot start.');
     }
     super({
-      jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
+      jwtFromRequest: ExtractJwt.fromExtractors([
+        ExtractJwt.fromAuthHeaderAsBearerToken(),
+        (request: any) => {
+          return request?.cookies?.['jwt'];
+        },
+      ]),
       ignoreExpiration: false,
       secretOrKey: secret,
     });

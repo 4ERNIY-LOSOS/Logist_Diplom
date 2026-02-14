@@ -3,10 +3,13 @@ import { AppModule } from './app.module';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { ValidationPipe, ClassSerializerInterceptor } from '@nestjs/common'; // Import ValidationPipe
 import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
+import cookieParser from 'cookie-parser';
 
 async function bootstrap() {
   process.env.TZ = 'UTC'; // Set timezone for the Node.js process
   const app = await NestFactory.create(AppModule);
+
+  app.use(cookieParser());
 
   app.useGlobalPipes(
     new ValidationPipe({
@@ -43,7 +46,7 @@ async function bootstrap() {
 
   // Enable CORS
   app.enableCors({
-    origin: 'http://localhost:5173', // Allow frontend dev server
+    origin: ['http://localhost:5173', 'http://localhost:3001'], // Allow frontend dev servers
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
     credentials: true,
   });
