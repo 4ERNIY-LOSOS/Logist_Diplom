@@ -18,12 +18,12 @@ export const shipmentService = {
   },
 
   async getDrivers(): Promise<any[]> {
-    const response = await api.get('/driver');
-    return response.data;
+    const response = await api.get('/driver', { params: { limit: 100 } });
+    return response.data.data || response.data;
   },
 
   async getVehicles(): Promise<any[]> {
-    const response = await api.get('/vehicle');
-    return response.data;
+    const response = await api.get('/vehicle', { params: { limit: 100 } });
+    return response.data.data || response.data;
   }
 };

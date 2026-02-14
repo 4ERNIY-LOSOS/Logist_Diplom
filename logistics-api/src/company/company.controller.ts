@@ -30,7 +30,7 @@ export class CompanyController {
   }
 
   @Post()
-  @Roles(RoleName.ADMIN, RoleName.LOGISTICIAN)
+  @Roles(RoleName.ADMIN, RoleName.LOGISTICIAN, RoleName.CLIENT)
   create(@Body() createCompanyDto: CreateCompanyDto) {
     return this.companyService.create(createCompanyDto);
   }

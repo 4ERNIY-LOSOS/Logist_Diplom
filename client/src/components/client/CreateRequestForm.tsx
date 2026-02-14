@@ -14,8 +14,8 @@ import {
   Alert,
   CircularProgress,
   MenuItem,
+  Grid,
 } from '@mui/material';
-import Grid from '@mui/material/Grid';
 import DeleteIcon from '@mui/icons-material/Delete';
 import AddIcon from '@mui/icons-material/Add';
 import { requestService } from '../../services/request.service';

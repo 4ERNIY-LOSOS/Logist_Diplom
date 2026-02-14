@@ -26,6 +26,9 @@ export class Company {
   @Column({ nullable: true })
   email: string;
 
+  @Column({ nullable: true })
+  address: string;
+
   @Column({ name: 'is_active', default: true })
   isActive: boolean;
 

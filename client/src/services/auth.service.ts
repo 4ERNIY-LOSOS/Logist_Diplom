@@ -4,7 +4,16 @@ import type { AuthUser } from '../types';
 export const authService = {
   async login(username: string, password: string): Promise<{ message: string; user: AuthUser }> {
     const response = await api.post('/auth/login', { username, password });
-    return response.data;
+    const { user, message } = response.data;
+    return {
+      message,
+      user: {
+        userId: user.id,
+        username: user.username,
+        role: user.role,
+        companyId: user.companyId,
+      }
+    };
   },
 
   async register(data: any): Promise<any> {
@@ -14,7 +23,13 @@ export const authService = {
 
   async getMe(): Promise<AuthUser> {
     const response = await api.get('/auth/me');
-    return response.data;
+    const user = response.data;
+    return {
+      userId: user.userId || user.id,
+      username: user.username,
+      role: user.role,
+      companyId: user.companyId,
+    };
   },
 
   async logout(): Promise<void> {

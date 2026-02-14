@@ -10,8 +10,8 @@ import {
   CardContent,
   CircularProgress,
   Alert,
+  Grid,
 } from '@mui/material';
-import Grid from '@mui/material/Grid';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';

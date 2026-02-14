@@ -43,8 +43,8 @@ const CompleteProfile: React.FC = () => {
     try {
       const companyResponse = await api.post('/company', data);
       const companyId = companyResponse.data.id;
-      // Update user with companyId
-      await api.patch(`/user/${user.userId}`, { companyId });
+      // Update user with companyId via the /user/me endpoint
+      await api.patch('/user/me', { companyId });
 
       // Force reload to update context or just navigate
       // Since context fetches /auth/me on mount, it's better to just refresh or update context

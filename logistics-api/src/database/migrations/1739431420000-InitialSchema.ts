@@ -9,7 +9,7 @@ export class InitialSchema1739431420000 implements MigrationInterface {
         await queryRunner.query(`CREATE TYPE "vehicles_status_enum" AS ENUM('AVAILABLE', 'BUSY', 'MAINTENANCE')`);
         await queryRunner.query(`CREATE TYPE "drivers_status_enum" AS ENUM('AVAILABLE', 'BUSY', 'ON_LEAVE')`);
         await queryRunner.query(`CREATE TYPE "documents_type_enum" AS ENUM('BILL_OF_LADING', 'PACKING_LIST', 'INVOICE', 'PROOF_OF_DELIVERY', 'OTHER')`);
-        await queryRunner.query(`CREATE TYPE "ltl_shipments_status_enum" AS ENUM('CONSOLIDATING', 'IN_TRANSIT', 'ARRIVED', 'DECONSOLIDATED')`);
+        await queryRunner.query(`CREATE TYPE "ltl_shipments_status_enum" AS ENUM('Формируется', 'В пути', 'Завершен', 'Отменен')`);
         await queryRunner.query(`CREATE TYPE "vehicle_maintenance_type_enum" AS ENUM('ROUTINE', 'REPAIR', 'INSPECTION')`);
         await queryRunner.query(`CREATE TYPE "invoices_status_enum" AS ENUM('DRAFT', 'SENT', 'PAID', 'OVERDUE', 'CANCELLED')`);
 
@@ -17,7 +17,7 @@ export class InitialSchema1739431420000 implements MigrationInterface {
         await queryRunner.query(`CREATE TABLE "roles" ("id" uuid NOT NULL DEFAULT uuid_generate_v4(), "name" character varying(50) NOT NULL, "description" character varying, CONSTRAINT "UQ_roles_name" UNIQUE ("name"), CONSTRAINT "PK_roles" PRIMARY KEY ("id"))`);
 
         // Companies
-        await queryRunner.query(`CREATE TABLE "companies" ("id" uuid NOT NULL DEFAULT uuid_generate_v4(), "name" character varying NOT NULL, "tax_id" character varying NOT NULL, "phone" character varying, "email" character varying, "is_active" boolean NOT NULL DEFAULT true, "created_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(), "updated_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(), CONSTRAINT "UQ_companies_name" UNIQUE ("name"), CONSTRAINT "UQ_companies_tax_id" UNIQUE ("tax_id"), CONSTRAINT "PK_companies" PRIMARY KEY ("id"))`);
+        await queryRunner.query(`CREATE TABLE "companies" ("id" uuid NOT NULL DEFAULT uuid_generate_v4(), "name" character varying NOT NULL, "tax_id" character varying NOT NULL, "phone" character varying, "email" character varying, "address" character varying, "is_active" boolean NOT NULL DEFAULT true, "created_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(), "updated_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(), CONSTRAINT "UQ_companies_name" UNIQUE ("name"), CONSTRAINT "UQ_companies_tax_id" UNIQUE ("tax_id"), CONSTRAINT "PK_companies" PRIMARY KEY ("id"))`);
 
         // Users
         await queryRunner.query(`CREATE TABLE "users" ("id" uuid NOT NULL DEFAULT uuid_generate_v4(), "username" character varying NOT NULL, "password" character varying NOT NULL, "first_name" character varying, "last_name" character varying, "email" character varying NOT NULL, "phone" character varying, "is_active" boolean NOT NULL DEFAULT true, "is_email_verified" boolean NOT NULL DEFAULT false, "email_verification_token" character varying, "role_id" uuid, "company_id" uuid, "created_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(), "updated_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(), "deleted_at" TIMESTAMP WITH TIME ZONE, CONSTRAINT "UQ_users_username" UNIQUE ("username"), CONSTRAINT "UQ_users_email" UNIQUE ("email"), CONSTRAINT "PK_users" PRIMARY KEY ("id"))`);
@@ -40,7 +40,7 @@ export class InitialSchema1739431420000 implements MigrationInterface {
         await queryRunner.query(`CREATE TABLE "drivers" ("id" uuid NOT NULL DEFAULT uuid_generate_v4(), "first_name" character varying NOT NULL, "last_name" character varying NOT NULL, "license_number" character varying NOT NULL, "phone" character varying, "status" "drivers_status_enum" NOT NULL DEFAULT 'AVAILABLE', "is_available" boolean NOT NULL DEFAULT true, "created_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(), "updated_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(), "deleted_at" TIMESTAMP WITH TIME ZONE, CONSTRAINT "UQ_drivers_license_number" UNIQUE ("license_number"), CONSTRAINT "PK_drivers" PRIMARY KEY ("id"))`);
 
         // Cargo Types
-        await queryRunner.query(`CREATE TABLE "cargo_types" ("id" uuid NOT NULL DEFAULT uuid_generate_v4(), "name" character varying NOT NULL, "description" character varying, CONSTRAINT "UQ_cargo_types_name" UNIQUE ("name"), CONSTRAINT "PK_cargo_types" PRIMARY KEY ("id"))`);
+        await queryRunner.query(`CREATE TABLE "cargo_types" ("id" uuid NOT NULL DEFAULT uuid_generate_v4(), "name" character varying NOT NULL, "description" character varying, "base_multiplier" numeric(5,2) NOT NULL DEFAULT '1.0', CONSTRAINT "UQ_cargo_types_name" UNIQUE ("name"), CONSTRAINT "PK_cargo_types" PRIMARY KEY ("id"))`);
 
         // Requests
         await queryRunner.query(`CREATE TABLE "requests" ("id" uuid NOT NULL DEFAULT uuid_generate_v4(), "pickup_date" TIMESTAMP WITH TIME ZONE NOT NULL, "delivery_date" TIMESTAMP WITH TIME ZONE NOT NULL, "distance_km" numeric(10,2) NOT NULL DEFAULT '0', "preliminary_cost" numeric(10,2), "final_cost" numeric(10,2), "notes" character varying, "created_by_user_id" uuid, "company_id" uuid, "status_id" uuid, "pickup_address_id" uuid, "delivery_address_id" uuid, "created_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(), "updated_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(), "deleted_at" TIMESTAMP WITH TIME ZONE, CONSTRAINT "PK_requests" PRIMARY KEY ("id"), CONSTRAINT "CHK_requests_dates" CHECK ("pickup_date" <= "delivery_date"), CONSTRAINT "CHK_requests_distance" CHECK ("distance_km" >= 0), CONSTRAINT "CHK_requests_preliminary_cost" CHECK ("preliminary_cost" >= 0), CONSTRAINT "CHK_requests_final_cost" CHECK ("final_cost" >= 0))`);
@@ -51,7 +51,7 @@ export class InitialSchema1739431420000 implements MigrationInterface {
         await queryRunner.query(`CREATE TABLE "cargos" ("id" uuid NOT NULL DEFAULT uuid_generate_v4(), "name" character varying NOT NULL, "description" character varying, "weight" numeric(10,2) NOT NULL, "volume" numeric(10,2) NOT NULL, "request_id" uuid, "cargo_type_id" uuid, CONSTRAINT "PK_cargos" PRIMARY KEY ("id"), CONSTRAINT "CHK_cargos_weight" CHECK ("weight" >= 0), CONSTRAINT "CHK_cargos_volume" CHECK ("volume" >= 0))`);
 
         // Cargo Requirements
-        await queryRunner.query(`CREATE TABLE "cargo_requirements" ("id" uuid NOT NULL DEFAULT uuid_generate_v4(), "name" character varying NOT NULL, "value" character varying NOT NULL, "cargo_id" uuid, CONSTRAINT "PK_cargo_requirements" PRIMARY KEY ("id"))`);
+        await queryRunner.query(`CREATE TABLE "cargo_requirements" ("id" uuid NOT NULL DEFAULT uuid_generate_v4(), "name" character varying NOT NULL, "value" character varying, "surcharge_amount" numeric(10,2) NOT NULL DEFAULT '0', "cargo_id" uuid, CONSTRAINT "PK_cargo_requirements" PRIMARY KEY ("id"))`);
 
         // Shipment Statuses
         await queryRunner.query(`CREATE TABLE "shipment_statuses" ("id" uuid NOT NULL DEFAULT uuid_generate_v4(), "name" character varying NOT NULL, "description" character varying, CONSTRAINT "UQ_shipment_statuses_name" UNIQUE ("name"), CONSTRAINT "PK_shipment_statuses" PRIMARY KEY ("id"))`);
@@ -79,7 +79,7 @@ export class InitialSchema1739431420000 implements MigrationInterface {
         await queryRunner.query(`CREATE TABLE "audit_logs" ("id" uuid NOT NULL DEFAULT uuid_generate_v4(), "action_type" character varying NOT NULL, "entity_name" character varying NOT NULL, "entity_id" character varying NOT NULL, "details" jsonb, "user_id" uuid, "timestamp" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(), CONSTRAINT "PK_audit_logs" PRIMARY KEY ("id"))`);
 
         // Tariffs
-        await queryRunner.query(`CREATE TABLE "tariffs" ("id" uuid NOT NULL DEFAULT uuid_generate_v4(), "name" character varying NOT NULL, "base_price" numeric(10,2) NOT NULL, "price_per_km" numeric(10,2) NOT NULL, "price_per_kg" numeric(10,2) NOT NULL, "price_per_m3" numeric(10,2) NOT NULL, "is_active" boolean NOT NULL DEFAULT true, CONSTRAINT "PK_tariffs" PRIMARY KEY ("id"))`);
+        await queryRunner.query(`CREATE TABLE "tariffs" ("id" uuid NOT NULL DEFAULT uuid_generate_v4(), "name" character varying NOT NULL, "base_fee" numeric(10,2) NOT NULL DEFAULT '0', "cost_per_km" numeric(10,2) NOT NULL, "cost_per_kg" numeric(10,2) NOT NULL, "cost_per_m3" numeric(10,2) NOT NULL, "is_active" boolean NOT NULL DEFAULT true, "created_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(), "updated_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(), CONSTRAINT "PK_tariffs" PRIMARY KEY ("id"))`);
 
         // Warehouses
         await queryRunner.query(`CREATE TABLE "warehouses" ("id" uuid NOT NULL DEFAULT uuid_generate_v4(), "name" character varying NOT NULL, "capacity_m3" numeric(10,2) NOT NULL, "address_id" uuid, CONSTRAINT "PK_warehouses" PRIMARY KEY ("id"))`);
@@ -101,7 +101,7 @@ export class InitialSchema1739431420000 implements MigrationInterface {
         await queryRunner.query(`ALTER TABLE "requests" ADD CONSTRAINT "FK_requests_delivery_address" FOREIGN KEY ("delivery_address_id") REFERENCES "addresses"("id") ON DELETE NO ACTION ON UPDATE NO ACTION`);
         await queryRunner.query(`ALTER TABLE "cargos" ADD CONSTRAINT "FK_cargos_requests" FOREIGN KEY ("request_id") REFERENCES "requests"("id") ON DELETE NO ACTION ON UPDATE NO ACTION`);
         await queryRunner.query(`ALTER TABLE "cargos" ADD CONSTRAINT "FK_cargos_types" FOREIGN KEY ("cargo_type_id") REFERENCES "cargo_types"("id") ON DELETE NO ACTION ON UPDATE NO ACTION`);
-        await queryRunner.query(`ALTER TABLE "cargo_requirements" ADD CONSTRAINT "FK_cargo_requirements_cargos" FOREIGN KEY ("cargo_id") REFERENCES "cargos"("id") ON DELETE NO ACTION ON UPDATE NO ACTION`);
+        await queryRunner.query(`ALTER TABLE "cargo_requirements" ADD CONSTRAINT "FK_cargo_requirements_cargos" FOREIGN KEY ("cargo_id") REFERENCES "cargos"("id") ON DELETE CASCADE ON UPDATE NO ACTION`);
         await queryRunner.query(`ALTER TABLE "shipments" ADD CONSTRAINT "FK_shipments_requests" FOREIGN KEY ("request_id") REFERENCES "requests"("id") ON DELETE CASCADE ON UPDATE NO ACTION`);
         await queryRunner.query(`ALTER TABLE "shipments" ADD CONSTRAINT "FK_shipments_drivers" FOREIGN KEY ("driver_id") REFERENCES "drivers"("id") ON DELETE NO ACTION ON UPDATE NO ACTION`);
         await queryRunner.query(`ALTER TABLE "shipments" ADD CONSTRAINT "FK_shipments_vehicles" FOREIGN KEY ("vehicle_id") REFERENCES "vehicles"("id") ON DELETE NO ACTION ON UPDATE NO ACTION`);

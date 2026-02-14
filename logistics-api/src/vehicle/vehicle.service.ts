@@ -19,6 +19,10 @@ export class VehicleService {
     private vehicleTypeRepository: Repository<VehicleType>,
   ) {}
 
+  async findAllTypes(): Promise<VehicleType[]> {
+    return this.vehicleTypeRepository.find();
+  }
+
   async create(createVehicleDto: CreateVehicleDto): Promise<Vehicle> {
     const { typeId, licensePlate, ...rest } = createVehicleDto;
 

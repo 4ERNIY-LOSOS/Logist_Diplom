@@ -26,7 +26,8 @@ export class SeedData1739431430000 implements MigrationInterface {
             (uuid_generate_v4(), 'Запланирована', 'Рейс запланирован'),
             (uuid_generate_v4(), 'В пути', 'Груз находится в пути'),
             (uuid_generate_v4(), 'Доставлена', 'Груз доставлен получателю'),
-            (uuid_generate_v4(), 'POD получен', 'Документы о доставке подтверждены')`);
+            (uuid_generate_v4(), 'POD получен', 'Документы о доставке подтверждены'),
+            (uuid_generate_v4(), 'Отменена', 'Рейс отменен')`);
 
         // Vehicle Types
         const tentTypeId = 'd1e598c9-251a-4d37-817e-9799270b2a81';
@@ -36,10 +37,10 @@ export class SeedData1739431430000 implements MigrationInterface {
             (uuid_generate_v4(), 'Фургон', 'Закрытый жесткий кузов')`);
 
         // Cargo Types
-        await queryRunner.query(`INSERT INTO "cargo_types" (id, name, description) VALUES
-            (uuid_generate_v4(), 'Обычный', 'Стандартный коммерческий груз'),
-            (uuid_generate_v4(), 'Опасный', 'Груз ADR'),
-            (uuid_generate_v4(), 'Температурный', 'Груз, требующий особого режима')`);
+        await queryRunner.query(`INSERT INTO "cargo_types" (id, name, description, base_multiplier) VALUES
+            (uuid_generate_v4(), 'Обычный', 'Стандартный коммерческий груз', 1.0),
+            (uuid_generate_v4(), 'Опасный', 'Груз ADR', 1.5),
+            (uuid_generate_v4(), 'Температурный', 'Груз, требующий особого режима', 1.3)`);
 
         // Companies
         const companyId = 'a1e598c9-251a-4d37-817e-9799270b2a79';
@@ -63,6 +64,10 @@ export class SeedData1739431430000 implements MigrationInterface {
         // Vehicles
         await queryRunner.query(`INSERT INTO "vehicles" (id, license_plate, model, payload_capacity, volume_capacity, status, type_id) VALUES
             (uuid_generate_v4(), 'А777АА77', 'Volvo FH16', 20000, 82, 'AVAILABLE', '${tentTypeId}')`);
+
+        // Default Tariff
+        await queryRunner.query(`INSERT INTO "tariffs" (id, name, base_fee, cost_per_km, cost_per_kg, cost_per_m3, is_active) VALUES
+            (uuid_generate_v4(), 'Стандартный 2026', 5000, 50, 5, 200, true)`);
     }
 
     public async down(queryRunner: QueryRunner): Promise<void> {

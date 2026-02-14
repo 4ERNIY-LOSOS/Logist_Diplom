@@ -106,11 +106,18 @@ export class UserService {
   }
 
   async updateMe(userId: string, updateUserDto: UpdateUserDto): Promise<User> {
-    if (updateUserDto.role || updateUserDto.companyId) {
+    const user = await this.findOne(userId);
+
+    if (updateUserDto.role) {
+      throw new ForbiddenException('You are not allowed to change your role.');
+    }
+
+    if (updateUserDto.companyId && user.company) {
       throw new ForbiddenException(
-        'You are not allowed to change your role or company.',
+        'You are already associated with a company.',
       );
     }
+
     return this.update(userId, updateUserDto);
   }
 

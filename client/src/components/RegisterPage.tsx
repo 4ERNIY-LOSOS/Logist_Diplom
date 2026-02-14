@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { authService } from '../services/auth.service';
 import api from '../api/api';
 import { useAuth } from '../context/AuthContext';
@@ -42,7 +41,6 @@ type CompanyFormValues = zod.infer<typeof companySchema>;
 const steps = ['Создание аккаунта', 'Информация о компании'];
 
 const RegisterPage: React.FC = () => {
-  const navigate = useNavigate();
   const { login } = useAuth();
 
   const [activeStep, setActiveStep] = useState(0);
@@ -106,8 +104,9 @@ const RegisterPage: React.FC = () => {
     try {
       const companyResponse = await api.post('/company', data);
       const companyId = companyResponse.data.id;
-      await api.patch(`/user/${createdUserId}`, { companyId });
-      navigate('/client/dashboard');
+      await api.patch('/user/me', { companyId });
+      // Force refresh session to get the new companyId in AuthContext
+      window.location.href = '/client/dashboard';
     } catch (err: any) {
       setError(err.message || 'Не удалось зарегистрировать компанию.');
     }
