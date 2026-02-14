@@ -1,4 +1,4 @@
-import { IsUUID, IsNotEmpty, IsDate, IsNumber, Min } from 'class-validator';
+import { IsUUID, IsNotEmpty, IsDate, IsNumber, Min, IsOptional } from 'class-validator';
 import { Type } from 'class-transformer'; // Import Type and Transform
 
 export class CreateShipmentDto {
@@ -26,4 +26,16 @@ export class CreateShipmentDto {
   @IsNumber()
   @Min(0)
   finalCost: number;
+
+  @IsOptional()
+  id?: any;
+
+  @IsOptional()
+  status?: any;
+
+  @IsOptional()
+  createdAt?: any;
+
+  @IsOptional()
+  updatedAt?: any;
 }

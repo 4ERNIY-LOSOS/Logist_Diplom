@@ -21,7 +21,7 @@ export class SeedData1739431430000 implements MigrationInterface {
         }
 
         // Shipment Statuses
-        const shipmentStatuses = ['Запланирована', 'В пути', 'Доставлена', 'POD получен', 'Отменена'];
+        const shipmentStatuses = ['Запланирована', 'Консолидирована', 'В пути', 'Доставлена', 'POD получен', 'Отменена'];
         for (const status of shipmentStatuses) {
             await queryRunner.query(`INSERT INTO "shipment_statuses" (id, name) VALUES (uuid_generate_v4(), '${status}') ON CONFLICT (name) DO NOTHING`);
         }
