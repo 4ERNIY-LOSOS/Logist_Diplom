@@ -49,7 +49,7 @@ export class RequestController {
   }
 
   @Patch(':id')
-  @Roles(RoleName.ADMIN, RoleName.LOGISTICIAN)
+  @Roles(RoleName.ADMIN, RoleName.LOGISTICIAN, RoleName.CLIENT)
   update(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() updateRequestDto: UpdateRequestDto,
@@ -59,7 +59,7 @@ export class RequestController {
   }
 
   @Delete(':id')
-  @Roles(RoleName.ADMIN, RoleName.LOGISTICIAN)
+  @Roles(RoleName.ADMIN, RoleName.LOGISTICIAN, RoleName.CLIENT)
   remove(@Param('id', ParseUUIDPipe) id: string, @GetUser() user: RequestUser) {
     return this.requestService.remove(id, user);
   }
