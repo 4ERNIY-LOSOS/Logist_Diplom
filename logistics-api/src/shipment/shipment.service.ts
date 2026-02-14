@@ -145,6 +145,8 @@ export class ShipmentService {
 
         const newShipment = transactionalEntityManager.create(Shipment, {
           ...rest,
+          plannedPickupDate: new Date(plannedPickupDate),
+          plannedDeliveryDate: new Date(plannedDeliveryDate),
           request,
           driver,
           vehicle,
