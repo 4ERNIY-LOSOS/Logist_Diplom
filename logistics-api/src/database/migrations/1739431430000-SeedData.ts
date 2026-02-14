@@ -107,7 +107,7 @@ export class SeedData1739431430000 implements MigrationInterface {
             // Mock Request
             const statusNewQuery = await queryRunner.query(`SELECT id FROM "request_statuses" WHERE name = 'Новая'`);
             if (statusNewQuery.length > 0) {
-                const requestId = 'r1e598c9-251a-4d37-817e-9799270b2a92';
+                const requestId = 'e1e598c9-251a-4d37-817e-9799270b2a92';
                 await queryRunner.query(`INSERT INTO "requests" (id, pickup_date, delivery_date, distance_km, preliminary_cost, created_by_user_id, company_id, status_id, pickup_address_id, delivery_address_id) VALUES ('${requestId}', now(), now() + interval '2 days', 700, 35000, '${userId}', '${companyId}', '${statusNewQuery[0].id}', '${addr1}', '${addr2}')`);
 
                 // Mock Cargo
@@ -119,6 +119,22 @@ export class SeedData1739431430000 implements MigrationInterface {
 
             // Mock Invoice
             await queryRunner.query(`INSERT INTO "invoices" (id, invoice_number, amount, tax_amount, status, due_date, company_id) VALUES (uuid_generate_v4(), 'INV-2026-001', 35000, 7000, 'SENT', now() + interval '14 days', '${companyId}')`);
+
+            // Mock Active Shipment for Tracking
+            const statusTransitQuery = await queryRunner.query(`SELECT id FROM "shipment_statuses" WHERE name = 'В пути'`);
+            const driverQuery = await queryRunner.query(`SELECT id FROM "drivers" LIMIT 1`);
+            const vehicleQuery = await queryRunner.query(`SELECT id FROM "vehicles" LIMIT 1`);
+
+            if (statusTransitQuery.length > 0 && driverQuery.length > 0 && vehicleQuery.length > 0) {
+                const req2Id = 'e1e598c9-251a-4d37-817e-9799270b2a93';
+                const shipId = 'f1e598c9-251a-4d37-817e-9799270b2a94';
+
+                await queryRunner.query(`INSERT INTO "requests" (id, pickup_date, delivery_date, distance_km, preliminary_cost, created_by_user_id, company_id, status_id, pickup_address_id, delivery_address_id) VALUES ('${req2Id}', now() - interval '1 day', now() + interval '1 day', 400, 20000, '${userId}', '${companyId}', '${statusNewQuery[0].id}', '${addr1}', '${addr2}')`);
+                await queryRunner.query(`INSERT INTO "shipments" (id, planned_pickup_date, planned_delivery_date, request_id, driver_id, vehicle_id, status_id) VALUES ('${shipId}', now() - interval '1 day', now() + interval '1 day', '${req2Id}', '${driverQuery[0].id}', '${vehicleQuery[0].id}', '${statusTransitQuery[0].id}')`);
+
+                // Mock GPS log
+                await queryRunner.query(`INSERT INTO "gps_logs" (id, latitude, longitude, timestamp, shipment_id) VALUES (uuid_generate_v4(), 55.7558, 37.6173, now(), '${shipId}')`);
+            }
         }
     }
 
