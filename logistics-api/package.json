@@ -22,6 +22,7 @@
     "migration:generate": "npm run typeorm -- -d src/database/typeorm.config.ts migration:generate",
     "migration:run": "npm run typeorm -- -d src/database/typeorm.config.ts migration:run",
     "migration:revert": "npm run typeorm -- -d src/database/typeorm.config.ts migration:revert",
+    "db:up": "docker compose -f ../docker-compose.yml up -d postgres",
     "db:setup": "npm run migration:run",
     "db:reset": "npm run typeorm schema:drop -- -d src/database/typeorm.config.ts && npm run migration:run"
   },
