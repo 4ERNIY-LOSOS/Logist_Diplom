@@ -52,6 +52,7 @@ export class RequestService {
     const parsedPickupDate = new Date(pickupDate);
     const parsedDeliveryDate = new Date(deliveryDate);
     const now = new Date();
+    now.setHours(0, 0, 0, 0); // Allow today
 
     if (parsedPickupDate < now) {
       throw new BadRequestException(
@@ -114,6 +115,8 @@ export class RequestService {
 
     const newRequest = this.requestRepository.create({
       ...rest,
+      pickupDate: parsedPickupDate,
+      deliveryDate: parsedDeliveryDate,
       pickupAddress: pickupAddress as any,
       deliveryAddress: deliveryAddress as any,
       cargos: cargosWithTypes as any,
