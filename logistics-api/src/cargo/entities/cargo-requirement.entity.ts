@@ -1,4 +1,4 @@
-import { Column, Entity, JoinColumn, ManyToOne, PrimaryGeneratedColumn } from 'typeorm';
+import { Column, Entity, JoinColumn, ManyToOne, PrimaryGeneratedColumn, DeleteDateColumn } from 'typeorm';
 import { Cargo } from './cargo.entity';
 import { NumericTransformer } from '../../common/transformers/numeric.transformer';
 
@@ -19,4 +19,7 @@ export class CargoRequirement {
   @ManyToOne('Cargo', 'requirements', { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'cargo_id' })
   cargo: Cargo;
+
+  @DeleteDateColumn({ type: 'timestamptz', name: 'deleted_at', nullable: true })
+  deletedAt: Date;
 }

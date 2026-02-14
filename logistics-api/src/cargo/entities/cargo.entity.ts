@@ -6,6 +6,7 @@ import {
   OneToMany,
   PrimaryGeneratedColumn,
   Check,
+  DeleteDateColumn,
 } from 'typeorm';
 import { Exclude } from 'class-transformer';
 import { Request } from '../../request/entities/request.entity';
@@ -43,4 +44,7 @@ export class Cargo {
 
   @OneToMany('CargoRequirement', 'cargo', { cascade: true })
   requirements: CargoRequirement[];
+
+  @DeleteDateColumn({ type: 'timestamptz', name: 'deleted_at', nullable: true })
+  deletedAt: Date;
 }

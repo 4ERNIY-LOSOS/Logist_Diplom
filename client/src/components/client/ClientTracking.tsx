@@ -125,6 +125,7 @@ const ClientTracking: React.FC = () => {
           <Grid size={{ xs: 12, md: 8 }}>
             <Paper variant="outlined" sx={{ height: '100%', position: 'relative', overflow: 'hidden' }}>
               <MapContainer
+                key={selectedShipment?.id || 'static-map'}
                 center={[55.751244, 37.618423] as any}
                 zoom={5}
                 style={{ height: '100%', width: '100%' }}
