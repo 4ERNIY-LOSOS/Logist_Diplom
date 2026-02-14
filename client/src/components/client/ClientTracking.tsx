@@ -42,6 +42,11 @@ const RecenterMap = ({ coords }: { coords: [number, number] }) => {
 };
 
 const ClientTracking: React.FC = () => {
+  // React 19 compatibility casts
+  const MapContainerAny = MapContainer as any;
+  const TileLayerAny = TileLayer as any;
+  const MarkerAny = Marker as any;
+
   const [shipments, setShipments] = useState<Shipment[]>([]);
   const [selectedShipment, setSelectedShipment] = useState<Shipment | null>(null);
   const [latestPos, setLatestPos] = useState<[number, number] | null>(null);
@@ -87,7 +92,7 @@ const ClientTracking: React.FC = () => {
     return () => clearInterval(interval);
   }, [selectedShipment]);
 
-  if (loading) return <CircularProgress />;
+  if (loading) return <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}><CircularProgress /></Box>;
 
   return (
     <Box>
@@ -124,27 +129,29 @@ const ClientTracking: React.FC = () => {
           </Grid>
           <Grid size={{ xs: 12, md: 8 }}>
             <Paper variant="outlined" sx={{ height: '100%', position: 'relative', overflow: 'hidden' }}>
-              <MapContainer
-                key={selectedShipment?.id || 'static-map'}
-                center={[55.751244, 37.618423] as any}
-                zoom={5}
-                style={{ height: '100%', width: '100%' }}
-              >
-                <TileLayer
+              {selectedShipment && (
+                <MapContainerAny
+                  key={`map-${selectedShipment.id}`}
+                  center={[55.751244, 37.618423]}
+                  zoom={5}
+                  style={{ height: '100%', width: '100%' }}
+                >
+                <TileLayerAny
                   url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                 />
                 {latestPos && (
                   <>
-                    <Marker position={latestPos}>
+                    <MarkerAny position={latestPos}>
                       <Popup>
                         Груз в пути<br />
                         Заказ: {selectedShipment?.id.substring(0,8)}
                       </Popup>
-                    </Marker>
+                    </MarkerAny>
                     <RecenterMap coords={latestPos} />
                   </>
                 )}
-              </MapContainer>
+                </MapContainerAny>
+              )}
               {!latestPos && selectedShipment && (
                 <Box sx={{ position: 'absolute', top: 10, left: 50, zIndex: 1000, bgcolor: 'rgba(255,255,255,0.8)', p: 1, borderRadius: 1 }}>
                   <Typography variant="caption">Данные GPS временно недоступны для этой перевозки</Typography>

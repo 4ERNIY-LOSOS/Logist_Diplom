@@ -123,8 +123,8 @@ const ShipmentTracking: React.FC = () => {
       <Dialog open={!!selectedShipmentId} onClose={() => setSelectedShipmentId(null)} fullWidth maxWidth="md">
         <DialogTitle>Live Tracking: {selectedShipmentId?.substring(0, 8)}</DialogTitle>
         <DialogContent sx={{ height: '500px' }}>
-          {currentCoords ? (
-            <MapContainerAny center={currentCoords} zoom={13} style={{ height: '100%', width: '100%' }}>
+          {selectedShipmentId && currentCoords ? (
+            <MapContainerAny key={`map-log-${selectedShipmentId}`} center={currentCoords} zoom={13} style={{ height: '100%', width: '100%' }}>
               <TileLayerAny url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
               <MarkerAny position={currentCoords}>
                 <Popup>Current Location</Popup>

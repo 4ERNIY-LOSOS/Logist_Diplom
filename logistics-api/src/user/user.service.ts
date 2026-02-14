@@ -115,11 +115,18 @@ export class UserService {
   async updateMe(userId: string, updateUserDto: UpdateUserDto): Promise<User> {
     const user = await this.findOne(userId);
 
-    if (updateUserDto.role && updateUserDto.role !== user.role.name) {
+    // If the frontend sends the role object or name, we only block if it's DIFFERENT
+    const newRoleName = typeof updateUserDto.role === 'string'
+      ? updateUserDto.role
+      : (updateUserDto.role as any)?.name;
+
+    if (newRoleName && user.role && newRoleName !== user.role.name) {
       throw new ForbiddenException('You are not allowed to change your role.');
     }
 
-    if (updateUserDto.companyId && user.company && updateUserDto.companyId !== user.company.id) {
+    const newCompanyId = updateUserDto.companyId;
+
+    if (newCompanyId && user.company && newCompanyId !== user.company.id) {
       throw new ForbiddenException(
         'You are already associated with a company.',
       );

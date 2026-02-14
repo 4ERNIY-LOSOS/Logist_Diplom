@@ -101,8 +101,8 @@ export class SeedData1739431430000 implements MigrationInterface {
             // Mock Addresses
             const addr1 = 'b1e598c9-251a-4d37-817e-9799270b2a90';
             const addr2 = 'b1e598c9-251a-4d37-817e-9799270b2a91';
-            await queryRunner.query(`INSERT INTO "addresses" (id, country, city, street, house_number, postal_code) VALUES ('${addr1}', 'Россия', 'Москва', 'Тверская', '1', '101000')`);
-            await queryRunner.query(`INSERT INTO "addresses" (id, country, city, street, house_number, postal_code) VALUES ('${addr2}', 'Россия', 'Санкт-Петербург', 'Невский', '10', '190000')`);
+            await queryRunner.query(`INSERT INTO "addresses" (id, country, city, street, house_number, postal_code, latitude, longitude) VALUES ('${addr1}', 'Россия', 'Москва', 'Тверская', '1', '101000', 55.755826, 37.617300)`);
+            await queryRunner.query(`INSERT INTO "addresses" (id, country, city, street, house_number, postal_code, latitude, longitude) VALUES ('${addr2}', 'Россия', 'Санкт-Петербург', 'Невский', '10', '190000', 59.934280, 30.335099)`);
 
             // Mock Request
             const statusNewQuery = await queryRunner.query(`SELECT id FROM "request_statuses" WHERE name = 'Новая'`);
