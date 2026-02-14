@@ -73,8 +73,10 @@ export const TariffManagementTable: React.FC = () => {
     if (!currentTariff) return;
     try {
       if (isNewTariff) {
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        const { id, ...data } = currentTariff;
         await tariffService.create({
-            ...currentTariff,
+            ...data,
             costPerKm: Number(currentTariff.costPerKm),
             costPerKg: Number(currentTariff.costPerKg),
             costPerM3: Number(currentTariff.costPerM3),

@@ -1,5 +1,5 @@
-import { IsUUID, IsNotEmpty, IsDateString, IsNumber, Min } from 'class-validator';
-import { Type, Transform } from 'class-transformer'; // Import Type and Transform
+import { IsUUID, IsNotEmpty, IsDate, IsNumber, Min } from 'class-validator';
+import { Type } from 'class-transformer'; // Import Type and Transform
 
 export class CreateShipmentDto {
   @IsUUID()
@@ -14,14 +14,12 @@ export class CreateShipmentDto {
   @IsNotEmpty()
   vehicleId: string;
 
-  @IsDateString()
+  @IsDate()
   @Type(() => Date)
-  @Transform(({ value }) => value && new Date(value), { toClassOnly: true }) // Convert to Date object, assuming UTC
   plannedPickupDate: Date;
 
-  @IsDateString()
+  @IsDate()
   @Type(() => Date)
-  @Transform(({ value }) => value && new Date(value), { toClassOnly: true }) // Convert to Date object, assuming UTC
   plannedDeliveryDate: Date;
 
   @IsNotEmpty()

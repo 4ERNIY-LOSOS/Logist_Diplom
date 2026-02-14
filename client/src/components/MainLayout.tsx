@@ -72,7 +72,7 @@ const MainLayout: React.FC = () => {
       text: 'Отчеты',
       icon: <BarChartIcon />,
       path: '/reports',
-      show: true,
+      show: isAdmin || isLogistician,
     },
   ];
 

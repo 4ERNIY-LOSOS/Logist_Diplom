@@ -78,6 +78,9 @@ export class InitialSchema1739431420000 implements MigrationInterface {
         // Audit Logs
         await queryRunner.query(`CREATE TABLE "audit_logs" ("id" uuid NOT NULL DEFAULT uuid_generate_v4(), "action_type" character varying NOT NULL, "entity_name" character varying NOT NULL, "entity_id" character varying NOT NULL, "details" jsonb, "user_id" uuid, "timestamp" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(), CONSTRAINT "PK_audit_logs" PRIMARY KEY ("id"))`);
 
+        // Notifications
+        await queryRunner.query(`CREATE TABLE "notifications" ("id" uuid NOT NULL DEFAULT uuid_generate_v4(), "message" character varying NOT NULL, "is_read" boolean NOT NULL DEFAULT false, "related_entity" character varying, "related_entity_id" character varying, "user_id" uuid, "created_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(), CONSTRAINT "PK_notifications" PRIMARY KEY ("id"))`);
+
         // Tariffs
         await queryRunner.query(`CREATE TABLE "tariffs" ("id" uuid NOT NULL DEFAULT uuid_generate_v4(), "name" character varying NOT NULL, "base_fee" numeric(10,2) NOT NULL DEFAULT '0', "cost_per_km" numeric(10,2) NOT NULL, "cost_per_kg" numeric(10,2) NOT NULL, "cost_per_m3" numeric(10,2) NOT NULL, "is_active" boolean NOT NULL DEFAULT true, "created_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(), "updated_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(), CONSTRAINT "UQ_tariffs_name" UNIQUE ("name"), CONSTRAINT "PK_tariffs" PRIMARY KEY ("id"))`);
 
@@ -113,6 +116,7 @@ export class InitialSchema1739431420000 implements MigrationInterface {
         await queryRunner.query(`ALTER TABLE "documents" ADD CONSTRAINT "FK_documents_shipments" FOREIGN KEY ("shipment_id") REFERENCES "shipments"("id") ON DELETE CASCADE ON UPDATE NO ACTION`);
         await queryRunner.query(`ALTER TABLE "gps_logs" ADD CONSTRAINT "FK_gps_logs_shipments" FOREIGN KEY ("shipment_id") REFERENCES "shipments"("id") ON DELETE NO ACTION ON UPDATE NO ACTION`);
         await queryRunner.query(`ALTER TABLE "audit_logs" ADD CONSTRAINT "FK_audit_logs_users" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE NO ACTION ON UPDATE NO ACTION`);
+        await queryRunner.query(`ALTER TABLE "notifications" ADD CONSTRAINT "FK_notifications_users" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE NO ACTION`);
         await queryRunner.query(`ALTER TABLE "warehouses" ADD CONSTRAINT "FK_warehouses_addresses" FOREIGN KEY ("address_id") REFERENCES "addresses"("id") ON DELETE NO ACTION ON UPDATE NO ACTION`);
         await queryRunner.query(`ALTER TABLE "invoices" ADD CONSTRAINT "FK_invoices_companies" FOREIGN KEY ("company_id") REFERENCES "companies"("id") ON DELETE NO ACTION ON UPDATE NO ACTION`);
         await queryRunner.query(`ALTER TABLE "invoices" ADD CONSTRAINT "FK_invoices_shipments" FOREIGN KEY ("shipment_id") REFERENCES "shipments"("id") ON DELETE CASCADE ON UPDATE NO ACTION`);
@@ -125,6 +129,7 @@ export class InitialSchema1739431420000 implements MigrationInterface {
         await queryRunner.query(`DROP TABLE "invoices"`);
         await queryRunner.query(`DROP TABLE "warehouses"`);
         await queryRunner.query(`DROP TABLE "tariffs"`);
+        await queryRunner.query(`DROP TABLE "notifications"`);
         await queryRunner.query(`DROP TABLE "audit_logs"`);
         await queryRunner.query(`DROP TABLE "gps_logs"`);
         await queryRunner.query(`DROP TABLE "documents"`);
