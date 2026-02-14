@@ -84,6 +84,13 @@ export class UserService {
     return user;
   }
 
+  async findOneByUsernameOrEmail(identifier: string): Promise<User | null> {
+    return this.userRepository.findOne({
+      where: [{ username: identifier }, { email: identifier }],
+      relations: ['role', 'company'],
+    });
+  }
+
   async findOneByUsername(username: string): Promise<User | null> {
     return this.userRepository.findOne({
       where: { username },

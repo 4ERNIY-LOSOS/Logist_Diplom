@@ -57,7 +57,7 @@ export class SeedData1739431430000 implements MigrationInterface {
         }
 
         // Users (Password: admin)
-        const adminPasswordHash = '$2b$10$7/O6f6H.u7v.yR1V1XF.7Oq8p/oK3Y2zJ5eJ9jFm8g0Pq6O7z9S1u';
+        const adminPasswordHash = '$2b$10$U/xO1SICwYO7hSWkQAxFFO8NGJORs8G.rTWdOOGrH2Zt7.7tMInYe';
         const users = [
             { username: 'admin', email: 'admin@axis.logistics', roleId: '866598c9-251a-4d37-817e-9799270b2a75', companyId: 'a1e598c9-251a-4d37-817e-9799270b2a79' },
             { username: 'logistic_1', email: 'log1@axis.logistics', roleId: '77f598c9-251a-4d37-817e-9799270b2a76', companyId: 'a1e598c9-251a-4d37-817e-9799270b2a79' },
