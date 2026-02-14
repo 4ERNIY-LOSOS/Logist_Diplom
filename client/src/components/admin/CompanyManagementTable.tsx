@@ -77,11 +77,21 @@ export const CompanyManagementTable: React.FC = () => {
 
   const handleDialogSave = async () => {
     if (!currentCompany) return;
+
+    // Build a clean data object based on the DTO
+    const companyData = {
+      name: currentCompany.name,
+      taxId: currentCompany.taxId,
+      email: currentCompany.email,
+      phone: currentCompany.phone,
+      // Do not include 'id' or 'address'
+    };
+
     try {
       if (isNewCompany) {
-        await api.post('/company', currentCompany);
+        await api.post('/company', companyData);
       } else {
-        await api.patch(`/company/${currentCompany.id}`, currentCompany);
+        await api.patch(`/company/${currentCompany.id}`, companyData);
       }
       handleDialogClose();
       fetchCompanies();

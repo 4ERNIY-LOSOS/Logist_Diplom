@@ -47,7 +47,7 @@ export class SeedData1739431430000 implements MigrationInterface {
             ('${companyId}', 'ООО "Логистика Плюс"', '7701234567', '+74951234567', 'info@logistics-plus.ru')`);
 
         // Admin User (Password: admin)
-        const adminPasswordHash = '$2b$10$7/O6f6H.u7v.yR1V1XF.7Oq8p/oK3Y2zJ5eJ9jFm8g0Pq6O7z9S1u';
+        const adminPasswordHash = '$2b$10$I0zstSyixNg0D18ksc.FqeIjRY48EP3XegqSfXgkfdwMFtrTjOMse';
         await queryRunner.query(`INSERT INTO "users" (id, username, password, email, first_name, last_name, role_id, company_id, is_email_verified) VALUES
             (uuid_generate_v4(), 'admin', '${adminPasswordHash}', 'admin@axis.logistics', 'Иван', 'Иванов', '${adminRoleId}', '${companyId}', true)`);
 

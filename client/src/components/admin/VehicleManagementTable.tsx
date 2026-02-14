@@ -100,16 +100,30 @@ export const VehicleManagementTable: React.FC = () => {
 
   const handleSave = async () => {
     if (!currentVehicle) return;
+
+    // Create a clean data object with only the properties the backend expects
+    const vehicleData = {
+      licensePlate: currentVehicle.licensePlate,
+      model: currentVehicle.model,
+      payloadCapacity: currentVehicle.payloadCapacity,
+      volumeCapacity: currentVehicle.volumeCapacity,
+      typeId: currentVehicle.typeId,
+      // Do not include 'id', 'status', 'isAvailable', or the nested 'type' object
+    };
+
     try {
       if (currentVehicle.id) {
-        await api.patch(`/vehicle/${currentVehicle.id}`, currentVehicle);
+        await api.patch(`/vehicle/${currentVehicle.id}`, vehicleData);
       } else {
-        await api.post('/vehicle', currentVehicle);
+        await api.post('/vehicle', vehicleData);
       }
       handleDialogClose();
       fetchVehicles();
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to save vehicle.');
+      const errorMessage = Array.isArray(err.response?.data?.message)
+        ? err.response.data.message.join(', ')
+        : err.response?.data?.message || 'Failed to save vehicle.';
+      setError(errorMessage);
     }
   };
 

@@ -42,7 +42,7 @@ import { AuditInterceptor } from './audit-log/audit.interceptor';
         password: configService.get<string>('DB_PASSWORD', 'admin'),
         database: configService.get<string>('DB_DATABASE', 'logistics_db'),
         autoLoadEntities: true,
-        synchronize: false,
+        synchronize: true,
         migrations: [__dirname + '/database/migrations/*{.ts,.js}'],
         migrationsRun: false,
       }),
