@@ -14,6 +14,7 @@ import {
   Button,
   CircularProgress,
 } from '@mui/material';
+import LocationSearchingIcon from '@mui/icons-material/LocationSearching';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 
@@ -93,12 +94,16 @@ const ShipmentTracking: React.FC = () => {
 
   const russiaCenter = [61.524, 105.318];
 
+  const handleTrackClick = (id: string) => {
+    setSelectedShipmentId(id);
+  };
+
   return (
     <Box>
       <Typography variant="h5" fontWeight="bold" gutterBottom>Глобальный мониторинг флота</Typography>
 
       <Box sx={{ height: '500px', width: '100%', mb: 4, borderRadius: 2, overflow: 'hidden', border: '1px solid', borderColor: 'divider' }}>
-          <MapContainerAny center={russiaCenter} zoom={3} style={{ height: '100%', width: '100%' }}>
+          <MapContainerAny key="logistician-global-map" center={russiaCenter} zoom={3} style={{ height: '100%', width: '100%' }}>
             <TileLayerAny url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors' />
             {shipments.map(s => shipmentPositions[s.id] && (
                 <MarkerAny key={s.id} position={shipmentPositions[s.id]}>
@@ -131,8 +136,14 @@ const ShipmentTracking: React.FC = () => {
                 <TableCell>{s.id.substring(0, 8)}</TableCell>
                 <TableCell>{s.request.company.name}</TableCell>
                 <TableCell>
-                  <Button variant="outlined" onClick={() => setSelectedShipmentId(s.id)}>
-                    Track on Map
+                  <Button
+                    variant="outlined"
+                    startIcon={<LocationSearchingIcon />}
+                    size="small"
+                    onClick={() => handleTrackClick(s.id)}
+                    disabled={!shipmentPositions[s.id]}
+                  >
+                    Показать
                   </Button>
                 </TableCell>
               </TableRow>

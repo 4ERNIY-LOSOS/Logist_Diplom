@@ -137,6 +137,7 @@ const ClientTracking: React.FC = () => {
           <Grid size={{ xs: 12, md: 8 }}>
             <Paper variant="outlined" sx={{ height: '100%', position: 'relative', overflow: 'hidden' }}>
               <MapContainerAny
+                key="client-global-map"
                 center={russiaCenter}
                 zoom={initialZoom}
                 style={{ height: '100%', width: '100%' }}

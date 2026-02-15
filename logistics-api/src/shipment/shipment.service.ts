@@ -109,12 +109,12 @@ export class ShipmentService {
           );
         }
 
-        const requestCompletedStatus =
+        const requestProcessingStatus =
           await transactionalEntityManager.findOne(RequestStatus, {
-            where: { name: 'Завершена' },
+            where: { name: 'В обработке' },
           });
-        if (!requestCompletedStatus) {
-          throw new NotFoundException('Request status "Завершена" not found.');
+        if (!requestProcessingStatus) {
+          throw new NotFoundException('Request status "В обработке" not found.');
         }
 
         driver.isAvailable = false;
@@ -139,7 +139,7 @@ export class ShipmentService {
         await transactionalEntityManager.save(driver);
         await transactionalEntityManager.save(vehicle);
 
-        request.status = requestCompletedStatus;
+        request.status = requestProcessingStatus;
         request.finalCost = finalCost;
         await transactionalEntityManager.save(request);
 
@@ -257,6 +257,17 @@ export class ShipmentService {
 
         // Handle specific logic for 'Delivered'
         if (newStatus.name === 'Доставлена') {
+          // Update request status to 'Завершена'
+          if (shipment.request) {
+            const completedStatus = await transactionalEntityManager.findOne(RequestStatus, {
+              where: { name: 'Завершена' },
+            });
+            if (completedStatus) {
+              shipment.request.status = completedStatus;
+              await transactionalEntityManager.save(shipment.request);
+            }
+          }
+
           // 1. Check for POD document
           const podDocument = await transactionalEntityManager.findOne(Document, {
             where: {

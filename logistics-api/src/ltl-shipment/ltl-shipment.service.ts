@@ -11,6 +11,7 @@ import { CreateLtlShipmentDto } from './dto/create-ltl-shipment.dto';
 import { UpdateLtlShipmentDto } from './dto/update-ltl-shipment.dto';
 import { Shipment } from '../shipment/entities/shipment.entity';
 import { ShipmentStatus } from '../shipment/entities/shipment-status.entity';
+import { RequestStatus } from '../request/entities/request-status.entity';
 import { LtlShipmentStatus } from './enums/ltl-shipment-status.enum';
 import { Document, DocumentType } from '../document/entities/document.entity';
 import { UserService } from '../user/user.service';
@@ -72,6 +73,12 @@ export class LtlShipmentService {
           );
         }
 
+        // Lock shipments first without relations to avoid join issues with FOR UPDATE
+        await transactionalEntityManager.find(Shipment, {
+          where: { id: In(shipmentIds) },
+          lock: { mode: 'pessimistic_write' },
+        });
+
         const shipments = await transactionalEntityManager.find(Shipment, {
           where: { id: In(shipmentIds) },
           relations: [
@@ -80,7 +87,6 @@ export class LtlShipmentService {
             'status',
             'request.company',
           ],
-          lock: { mode: 'pessimistic_write' },
         });
 
         if (shipments.length !== shipmentIds.length) {
@@ -187,8 +193,16 @@ export class LtlShipmentService {
                 }
                 shipment.status = deliveredStatus;
                 shipment.actualDeliveryDate = new Date();
-                if (shipment.request && (shipment.request.finalCost === null || shipment.request.finalCost === undefined)) {
-                    shipment.request.finalCost = shipment.request.preliminaryCost;
+                if (shipment.request) {
+                    const completedStatus = await transactionalEntityManager.findOne(RequestStatus, {
+                        where: { name: 'Завершена' },
+                    });
+                    if (completedStatus) {
+                        shipment.request.status = completedStatus;
+                    }
+                    if (shipment.request.finalCost === null || shipment.request.finalCost === undefined) {
+                        shipment.request.finalCost = shipment.request.preliminaryCost;
+                    }
                     await transactionalEntityManager.save(shipment.request);
                 }
             }
