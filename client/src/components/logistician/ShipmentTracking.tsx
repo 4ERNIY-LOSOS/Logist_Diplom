@@ -12,23 +12,21 @@ import {
   TableHead,
   TableRow,
   Button,
-  Dialog,
-  DialogTitle,
-  DialogContent,
   CircularProgress,
 } from '@mui/material';
-import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
-import L from 'leaflet';
+import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 
-// Fix for default Leaflet icon not showing up
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-delete (L.Icon.Default.prototype as any)._getIconUrl;
-L.Icon.Default.mergeOptions({
-  iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
-  iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
-  shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
-});
+// Leaflet icons are now globally setup in utils/leaflet-setup.ts
+
+// Helper to center map
+const RecenterMap = ({ coords }: { coords: [number, number] }) => {
+  const map = useMap();
+  useEffect(() => {
+    map.setView(coords, 10);
+  }, [coords, map]);
+  return null;
+};
 
 interface Shipment {
   id: string;
@@ -111,6 +109,9 @@ const ShipmentTracking: React.FC = () => {
                     </Popup>
                 </MarkerAny>
             ))}
+            {selectedShipmentId && shipmentPositions[selectedShipmentId] && (
+              <RecenterMap coords={shipmentPositions[selectedShipmentId]} />
+            )}
           </MapContainerAny>
       </Box>
 
