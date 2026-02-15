@@ -18,7 +18,9 @@ import {
 } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import AddIcon from '@mui/icons-material/Add';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import { requestService } from '../../services/request.service';
+import { geocodingService } from '../../services/geocoding.service';
 
 const addressSchema = z.object({
   country: z.string().min(2, 'Обязательное поле'),
@@ -56,7 +58,10 @@ interface CreateRequestFormProps {
 const CreateRequestForm: React.FC<CreateRequestFormProps> = ({ onSuccess, onCancel }) => {
   const [error, setError] = useState<string | null>(null);
   const [isConfirming, setIsConfirming] = useState(false);
+  const [isGeocoding, setIsGeocoding] = useState(false);
   const [formData, setFormData] = useState<RequestFormValues | null>(null);
+  const [pickupCoords, setPickupCoords] = useState<{ lat: number; lon: number } | null>(null);
+  const [deliveryCoords, setDeliveryCoords] = useState<{ lat: number; lon: number } | null>(null);
 
   const {
     register,
@@ -79,17 +84,43 @@ const CreateRequestForm: React.FC<CreateRequestFormProps> = ({ onSuccess, onCanc
     name: 'cargos',
   });
 
-  const handlePreview = (data: RequestFormValues) => {
-    setFormData(data);
-    setIsConfirming(true);
+  const handlePreview = async (data: RequestFormValues) => {
+    setError(null);
+    setIsGeocoding(true);
+    try {
+      const [pCoords, dCoords] = await Promise.all([
+        geocodingService.geocodeAddress(data.pickupAddress),
+        geocodingService.geocodeAddress(data.deliveryAddress)
+      ]);
+
+      if (!pCoords) {
+        setError('Адрес отправления не найден. Пожалуйста, уточните данные.');
+        return;
+      }
+      if (!dCoords) {
+        setError('Адрес назначения не найден. Пожалуйста, уточните данные.');
+        return;
+      }
+
+      setPickupCoords(pCoords);
+      setDeliveryCoords(dCoords);
+      setFormData(data);
+      setIsConfirming(true);
+    } catch (err) {
+      setError('Ошибка при проверке адресов. Попробуйте еще раз.');
+    } finally {
+      setIsGeocoding(false);
+    }
   };
 
   const onConfirm = async () => {
-    if (!formData) return;
+    if (!formData || !pickupCoords || !deliveryCoords) return;
     setError(null);
     try {
       await requestService.create({
         ...formData,
+        pickupAddress: { ...formData.pickupAddress, latitude: pickupCoords.lat, longitude: pickupCoords.lon },
+        deliveryAddress: { ...formData.deliveryAddress, latitude: deliveryCoords.lat, longitude: deliveryCoords.lon },
         pickupDate: new Date(formData.pickupDate).toISOString(),
         deliveryDate: new Date(formData.deliveryDate).toISOString(),
       });
@@ -122,22 +153,32 @@ const CreateRequestForm: React.FC<CreateRequestFormProps> = ({ onSuccess, onCanc
           <Grid size={{ xs: 12, md: 6 }}>
             <Card variant="outlined">
               <CardContent>
-                <Typography variant="subtitle1" fontWeight="bold">Пункт отправления</Typography>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <Typography variant="subtitle1" fontWeight="bold">Пункт отправления</Typography>
+                  <CheckCircleIcon color="success" fontSize="small" />
+                </Box>
                 <Typography>
                   {formData.pickupAddress.country}, г. {formData.pickupAddress.city}, {formData.pickupAddress.street}, д. {formData.pickupAddress.houseNumber}
                 </Typography>
-                <Typography>Индекс: {formData.pickupAddress.postalCode}</Typography>
+                <Typography variant="caption" color="text.secondary">
+                  Координаты: {pickupCoords?.lat.toFixed(4)}, {pickupCoords?.lon.toFixed(4)}
+                </Typography>
               </CardContent>
             </Card>
           </Grid>
           <Grid size={{ xs: 12, md: 6 }}>
             <Card variant="outlined">
               <CardContent>
-                <Typography variant="subtitle1" fontWeight="bold">Пункт назначения</Typography>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <Typography variant="subtitle1" fontWeight="bold">Пункт назначения</Typography>
+                  <CheckCircleIcon color="success" fontSize="small" />
+                </Box>
                 <Typography>
                   {formData.deliveryAddress.country}, г. {formData.deliveryAddress.city}, {formData.deliveryAddress.street}, д. {formData.deliveryAddress.houseNumber}
                 </Typography>
-                <Typography>Индекс: {formData.deliveryAddress.postalCode}</Typography>
+                <Typography variant="caption" color="text.secondary">
+                  Координаты: {deliveryCoords?.lat.toFixed(4)}, {deliveryCoords?.lon.toFixed(4)}
+                </Typography>
               </CardContent>
             </Card>
           </Grid>
@@ -322,8 +363,8 @@ const CreateRequestForm: React.FC<CreateRequestFormProps> = ({ onSuccess, onCanc
 
       <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 2 }}>
         <Button variant="outlined" onClick={onCancel}>Отмена</Button>
-        <Button variant="contained" type="submit" disabled={isSubmitting}>
-          {isSubmitting ? <CircularProgress size={24} /> : 'Создать заявку'}
+        <Button variant="contained" type="submit" disabled={isSubmitting || isGeocoding}>
+          {isSubmitting || isGeocoding ? <CircularProgress size={24} /> : 'Проверить и создать'}
         </Button>
       </Box>
     </Box>

@@ -42,8 +42,8 @@ interface Shipment {
 
 const ShipmentTracking: React.FC = () => {
   const [shipments, setShipments] = useState<Shipment[]>([]);
+  const [shipmentPositions, setShipmentPositions] = useState<Record<string, [number, number]>>({});
   const [selectedShipmentId, setSelectedShipmentId] = useState<string | null>(null);
-  const [currentCoords, setCurrentCoords] = useState<[number, number] | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -61,25 +61,29 @@ const ShipmentTracking: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    let interval: ReturnType<typeof setInterval> | undefined;
-    if (selectedShipmentId) {
-      const fetchCoords = async () => {
-        try {
-          const res = await api.get(`/gps-log/shipment/${selectedShipmentId}/latest`);
-          if (res.data) {
-            setCurrentCoords([Number(res.data.latitude), Number(res.data.longitude)]);
-          }
-        } catch (err) {
-          console.error('Error fetching GPS', err);
-        }
-      };
-      fetchCoords();
-      interval = setInterval(fetchCoords, 5000); // Polling every 5s
-    }
-    return () => clearInterval(interval);
-  }, [selectedShipmentId]);
+    if (shipments.length === 0) return;
 
-  if (loading) return <CircularProgress />;
+    const fetchAllPositions = async () => {
+        const newPositions: Record<string, [number, number]> = {};
+        await Promise.all(shipments.map(async (s) => {
+            try {
+                const res = await api.get(`/gps-log/shipment/${s.id}/latest`);
+                if (res.data) {
+                    newPositions[s.id] = [Number(res.data.latitude), Number(res.data.longitude)];
+                }
+            } catch (err) {
+                console.error(`Error fetching GPS for ${s.id}`, err);
+            }
+        }));
+        setShipmentPositions(newPositions);
+    };
+
+    fetchAllPositions();
+    const interval = setInterval(fetchAllPositions, 10000);
+    return () => clearInterval(interval);
+  }, [shipments]);
+
+  if (loading) return <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}><CircularProgress /></Box>;
 
   // React 19 compatibility casts
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -89,10 +93,29 @@ const ShipmentTracking: React.FC = () => {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const MarkerAny = Marker as any;
 
+  const russiaCenter = [61.524, 105.318];
+
   return (
     <Box>
-      <Typography variant="h6" gutterBottom>Active Shipments Tracking</Typography>
-      <TableContainer component={Paper}>
+      <Typography variant="h5" fontWeight="bold" gutterBottom>Глобальный мониторинг флота</Typography>
+
+      <Box sx={{ height: '500px', width: '100%', mb: 4, borderRadius: 2, overflow: 'hidden', border: '1px solid', borderColor: 'divider' }}>
+          <MapContainerAny center={russiaCenter} zoom={3} style={{ height: '100%', width: '100%' }}>
+            <TileLayerAny url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors' />
+            {shipments.map(s => shipmentPositions[s.id] && (
+                <MarkerAny key={s.id} position={shipmentPositions[s.id]}>
+                    <Popup>
+                        <strong>Заказ #{s.id.substring(0,8)}</strong><br/>
+                        Компания: {s.request.company.name}<br/>
+                        Статус: {s.status.name}
+                    </Popup>
+                </MarkerAny>
+            ))}
+          </MapContainerAny>
+      </Box>
+
+      <Typography variant="h6" gutterBottom>Список активных перевозок</Typography>
+      <TableContainer component={Paper} variant="outlined">
         <Table>
           <TableHead>
             <TableRow>
@@ -120,23 +143,6 @@ const ShipmentTracking: React.FC = () => {
         </Table>
       </TableContainer>
 
-      <Dialog open={!!selectedShipmentId} onClose={() => setSelectedShipmentId(null)} fullWidth maxWidth="md">
-        <DialogTitle>Live Tracking: {selectedShipmentId?.substring(0, 8)}</DialogTitle>
-        <DialogContent sx={{ height: '500px' }}>
-          {selectedShipmentId && currentCoords ? (
-            <MapContainerAny key={`map-log-${selectedShipmentId}`} center={currentCoords} zoom={13} style={{ height: '100%', width: '100%' }}>
-              <TileLayerAny url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-              <MarkerAny position={currentCoords}>
-                <Popup>Current Location</Popup>
-              </MarkerAny>
-            </MapContainerAny>
-          ) : (
-            <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
-              <Typography>Waiting for GPS signal...</Typography>
-            </Box>
-          )}
-        </DialogContent>
-      </Dialog>
     </Box>
   );
 };

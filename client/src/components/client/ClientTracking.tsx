@@ -49,18 +49,16 @@ const ClientTracking: React.FC = () => {
 
   const [shipments, setShipments] = useState<Shipment[]>([]);
   const [selectedShipment, setSelectedShipment] = useState<Shipment | null>(null);
-  const [latestPos, setLatestPos] = useState<[number, number] | null>(null);
+  const [shipmentPositions, setShipmentPositions] = useState<Record<string, [number, number]>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
   useEffect(() => {
     const fetchActiveShipments = async () => {
       try {
         const data = await shipmentService.getAll();
         const active = data.filter(s => s.status.name === 'В пути');
         setShipments(active);
-        if (active.length > 0) {
-          setSelectedShipment(active[0]);
-        }
       } catch (err: any) {
         setError(err.message || 'Ошибка при загрузке перевозок');
       } finally {
@@ -71,33 +69,37 @@ const ClientTracking: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    if (!selectedShipment) return;
+    if (shipments.length === 0) return;
 
-    const fetchLatestPos = async () => {
-      try {
-        const response = await api.get(`/gps-log/shipment/${selectedShipment.id}/latest`);
-        if (response.data) {
-          setLatestPos([Number(response.data.latitude), Number(response.data.longitude)]);
-        } else {
-          setLatestPos(null);
+    const fetchAllLatestPositions = async () => {
+      const newPositions: Record<string, [number, number]> = {};
+      await Promise.all(shipments.map(async (s) => {
+        try {
+          const response = await api.get(`/gps-log/shipment/${s.id}/latest`);
+          if (response.data) {
+            newPositions[s.id] = [Number(response.data.latitude), Number(response.data.longitude)];
+          }
+        } catch (err) {
+          console.error(`Failed to fetch GPS for ${s.id}`, err);
         }
-      } catch (err) {
-        console.error('Failed to fetch GPS log', err);
-        setLatestPos(null);
-      }
+      }));
+      setShipmentPositions(newPositions);
     };
 
-    fetchLatestPos();
-    const interval = setInterval(fetchLatestPos, 10000); // Update every 10s
+    fetchAllLatestPositions();
+    const interval = setInterval(fetchAllLatestPositions, 10000);
     return () => clearInterval(interval);
-  }, [selectedShipment]);
+  }, [shipments]);
 
   if (loading) return <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}><CircularProgress /></Box>;
+
+  const russiaCenter = [61.524, 105.318]; // Geographical center of Russia
+  const initialZoom = 3;
 
   return (
     <Box>
       <Typography variant="h4" fontWeight="bold" gutterBottom>
-        Отслеживание в реальном времени
+        Мониторинг перевозок по России
       </Typography>
 
       {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
@@ -105,10 +107,10 @@ const ClientTracking: React.FC = () => {
       {shipments.length === 0 ? (
         <Alert severity="info">На данный момент у вас нет активных перевозок в пути.</Alert>
       ) : (
-        <Grid container spacing={2} sx={{ height: '70vh' }}>
+        <Grid container spacing={2} sx={{ height: '75vh' }}>
           <Grid size={{ xs: 12, md: 4 }}>
             <Paper variant="outlined" sx={{ height: '100%', overflow: 'auto' }}>
-              <Typography variant="h6" sx={{ p: 2 }}>Активные перевозки</Typography>
+              <Typography variant="h6" sx={{ p: 2 }}>Активные перевозки ({shipments.length})</Typography>
               <Divider />
               <List>
                 {shipments.map((s) => (
@@ -119,7 +121,12 @@ const ClientTracking: React.FC = () => {
                     >
                       <ListItemText
                         primary={`Заказ #${s.id.substring(0,8)}`}
-                        secondary={`${s.request?.pickupAddress.city} → ${s.request?.deliveryAddress.city}`}
+                        secondary={
+                          <Typography variant="caption" display="block">
+                            {s.request?.pickupAddress.city} → {s.request?.deliveryAddress.city}<br/>
+                            {shipmentPositions[s.id] ? '📡 Сигнал активен' : '⏳ Ожидание GPS'}
+                          </Typography>
+                        }
                       />
                     </ListItemButton>
                   </ListItem>
@@ -129,34 +136,30 @@ const ClientTracking: React.FC = () => {
           </Grid>
           <Grid size={{ xs: 12, md: 8 }}>
             <Paper variant="outlined" sx={{ height: '100%', position: 'relative', overflow: 'hidden' }}>
-              {selectedShipment && (
-                <MapContainerAny
-                  key={`map-${selectedShipment.id}`}
-                  center={[55.751244, 37.618423]}
-                  zoom={5}
-                  style={{ height: '100%', width: '100%' }}
-                >
+              <MapContainerAny
+                center={russiaCenter}
+                zoom={initialZoom}
+                style={{ height: '100%', width: '100%' }}
+              >
                 <TileLayerAny
                   url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                  attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
                 />
-                {latestPos && (
-                  <>
-                    <MarkerAny position={latestPos}>
-                      <Popup>
-                        Груз в пути<br />
-                        Заказ: {selectedShipment?.id.substring(0,8)}
-                      </Popup>
-                    </MarkerAny>
-                    <RecenterMap coords={latestPos} />
-                  </>
+
+                {shipments.map(s => shipmentPositions[s.id] && (
+                  <MarkerAny key={s.id} position={shipmentPositions[s.id]}>
+                    <Popup>
+                      <strong>Заказ #{s.id.substring(0,8)}</strong><br/>
+                      Маршрут: {s.request?.pickupAddress.city} &rarr; {s.request?.deliveryAddress.city}<br/>
+                      Статус: {s.status.name}
+                    </Popup>
+                  </MarkerAny>
+                ))}
+
+                {selectedShipment && shipmentPositions[selectedShipment.id] && (
+                  <RecenterMap coords={shipmentPositions[selectedShipment.id]} />
                 )}
-                </MapContainerAny>
-              )}
-              {!latestPos && selectedShipment && (
-                <Box sx={{ position: 'absolute', top: 10, left: 50, zIndex: 1000, bgcolor: 'rgba(255,255,255,0.8)', p: 1, borderRadius: 1 }}>
-                  <Typography variant="caption">Данные GPS временно недоступны для этой перевозки</Typography>
-                </Box>
-              )}
+              </MapContainerAny>
             </Paper>
           </Grid>
         </Grid>
