@@ -25,35 +25,9 @@ import {
 } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
-import api from '../../api/api'; // Assuming you have an axios instance configured
-
-interface User {
-  id: string;
-  username: string;
-  email: string;
-  firstName?: string;
-  lastName?: string;
-  phone?: string;
-  isActive: boolean;
-  role: {
-    id: string;
-    name: string;
-  };
-  company?: {
-    id: string;
-    name: string;
-  };
-}
-
-interface Role {
-  id: string;
-  name: string;
-}
-
-interface Company {
-  id: string;
-  name: string;
-}
+import { userService, companyService, roleService } from '../../services/admin.service';
+import type { User, Role, Company } from '../../types';
+import { RoleName } from '../../types';
 
 export const UserManagementTable: React.FC = () => {
   const [users, setUsers] = useState<User[]>([]);
@@ -71,14 +45,14 @@ export const UserManagementTable: React.FC = () => {
   const fetchUsersAndData = async () => {
     setLoading(true);
     try {
-      const usersResponse = await api.get<User[]>('/user');
-      setUsers(usersResponse.data);
-
-      const rolesResponse = await api.get<Role[]>('/role');
-      setRoles(rolesResponse.data);
-
-      const companiesResponse = await api.get<Company[]>('/company');
-      setCompanies(companiesResponse.data);
+      const [usersData, rolesData, companiesData] = await Promise.all([
+        userService.getAll(),
+        roleService.getAll(),
+        companyService.getAll(),
+      ]);
+      setUsers(usersData);
+      setRoles(rolesData);
+      setCompanies(companiesData);
     } catch (err) {
       setError('Failed to fetch data.');
       console.error(err);
@@ -100,7 +74,7 @@ export const UserManagementTable: React.FC = () => {
   const handleDialogSave = async () => {
     if (!currentUser) return;
     try {
-      await api.patch(`/user/${currentUser.id}`, {
+      await userService.update(currentUser.id, {
         username: currentUser.username,
         email: currentUser.email,
         firstName: currentUser.firstName,
@@ -121,7 +95,7 @@ export const UserManagementTable: React.FC = () => {
   const handleDeleteUser = async (userId: string) => {
     if (window.confirm('Вы уверены, что хотите удалить этого пользователя?')) {
       try {
-        await api.delete(`/user/${userId}`);
+        await userService.delete(userId);
         fetchUsersAndData(); // Refresh list
       } catch (err) {
         setError('Failed to delete user.');
@@ -176,7 +150,7 @@ export const UserManagementTable: React.FC = () => {
                     const originalIsActive = user.isActive;
                     setUsers(prev => prev.map(u => u.id === user.id ? { ...u, isActive: e.target.checked } : u));
                     try {
-                      await api.patch(`/user/${user.id}`, { isActive: e.target.checked });
+                      await userService.update(user.id, { isActive: e.target.checked });
                     } catch (err) {
                       setError('Failed to update user status.');
                       console.error(err);
@@ -250,7 +224,7 @@ export const UserManagementTable: React.FC = () => {
                   onChange={(e) => {
                     const selectedRole = roles.find(r => r.name === e.target.value);
                     if (selectedRole) {
-                      setCurrentUser({ ...currentUser, role: selectedRole });
+                      setCurrentUser({ ...currentUser, role: { id: selectedRole.id, name: selectedRole.name as RoleName } });
                     }
                   }}
                 >

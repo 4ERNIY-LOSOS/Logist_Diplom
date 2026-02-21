@@ -7,7 +7,6 @@ import {
   Param,
   Delete,
   UseGuards,
-  Req,
 } from '@nestjs/common';
 import { UserService } from './user.service';
 import { CreateUserDto } from './dto/create-user.dto';
@@ -16,6 +15,8 @@ import { AuthGuard } from '@nestjs/passport';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { RoleName } from '../auth/enums/role-name.enum';
+import { GetUser } from '../auth/decorators/get-user.decorator';
+import type { RequestUser } from '../auth/interfaces/request-user.interface';
 
 @Controller('user')
 export class UserController {
@@ -23,14 +24,14 @@ export class UserController {
 
   @Get('me')
   @UseGuards(AuthGuard('jwt'))
-  getProfile(@Req() req) {
-    return this.userService.findMe(req.user.userId);
+  getProfile(@GetUser() user: RequestUser) {
+    return this.userService.findMe(user.userId);
   }
 
   @Patch('me')
   @UseGuards(AuthGuard('jwt'))
-  updateProfile(@Req() req, @Body() updateUserDto: UpdateUserDto) {
-    return this.userService.updateMe(req.user.userId, updateUserDto);
+  updateProfile(@GetUser() user: RequestUser, @Body() updateUserDto: UpdateUserDto) {
+    return this.userService.updateMe(user.userId, updateUserDto);
   }
 
   @Post()

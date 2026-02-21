@@ -14,6 +14,6 @@ export class RequestStatus {
   description: string;
 
   @Exclude()
-  @OneToMany(() => Request, (request) => request.status)
+  @OneToMany('Request', 'status')
   requests: Request[];
 }

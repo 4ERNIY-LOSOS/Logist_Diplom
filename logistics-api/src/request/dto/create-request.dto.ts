@@ -1,5 +1,5 @@
 import {
-  IsDateString,
+  IsDate,
   IsNotEmpty,
   IsOptional,
   IsArray,
@@ -12,14 +12,12 @@ import { CreateAddressDto } from '../../address/dto/create-address.dto';
 import { CreateCargoDto } from '../../cargo/dto/create-cargo.dto';
 
 export class CreateRequestDto {
-  @IsDateString()
+  @IsDate()
   @Type(() => Date)
-  @Transform(({ value }) => value && new Date(value), { toClassOnly: true }) // Convert to Date object, assuming UTC
   pickupDate: Date;
 
-  @IsDateString()
+  @IsDate()
   @Type(() => Date)
-  @Transform(({ value }) => value && new Date(value), { toClassOnly: true }) // Convert to Date object, assuming UTC
   deliveryDate: Date;
 
   @IsNotEmpty()

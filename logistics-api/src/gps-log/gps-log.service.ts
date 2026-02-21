@@ -10,6 +10,7 @@ import { CreateGpsLogDto } from './dto/create-gps-log.dto';
 import { Shipment } from '../shipment/entities/shipment.entity';
 import { UserService } from '../user/user.service';
 import { RoleName } from '../auth/enums/role-name.enum';
+import { RequestUser } from '../auth/interfaces/request-user.interface';
 
 @Injectable()
 export class GpsLogService {
@@ -23,7 +24,7 @@ export class GpsLogService {
 
   private async _checkClientAccess(
     shipmentId: string,
-    reqUser: any,
+    reqUser: RequestUser,
   ): Promise<void> {
     const user = await this.userService.findOne(reqUser.userId);
 
@@ -70,7 +71,7 @@ export class GpsLogService {
     return this.gpsLogRepository.save(gpsLog);
   }
 
-  async findByShipmentId(shipmentId: string, reqUser: any): Promise<GpsLog[]> {
+  async findByShipmentId(shipmentId: string, reqUser: RequestUser): Promise<GpsLog[]> {
     await this._checkClientAccess(shipmentId, reqUser);
 
     return this.gpsLogRepository.find({
@@ -81,7 +82,7 @@ export class GpsLogService {
 
   async findLatestByShipmentId(
     shipmentId: string,
-    reqUser: any,
+    reqUser: RequestUser,
   ): Promise<GpsLog | null> {
     await this._checkClientAccess(shipmentId, reqUser);
 

@@ -1,4 +1,4 @@
-import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
+import { Column, Entity, PrimaryGeneratedColumn, DeleteDateColumn } from 'typeorm';
 
 @Entity('addresses')
 export class Address {
@@ -28,4 +28,7 @@ export class Address {
 
   @Column('decimal', { precision: 11, scale: 8, nullable: true })
   longitude: number;
+
+  @DeleteDateColumn({ type: 'timestamptz', name: 'deleted_at', nullable: true })
+  deletedAt: Date;
 }

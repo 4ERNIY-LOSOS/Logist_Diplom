@@ -5,9 +5,13 @@ import { ReportsController } from './reports.controller';
 import { Shipment } from '../shipment/entities/shipment.entity';
 import { Vehicle } from '../vehicle/entities/vehicle.entity';
 import { Request } from '../request/entities/request.entity';
+import { UserModule } from '../user/user.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Shipment, Vehicle, Request])],
+  imports: [
+    TypeOrmModule.forFeature([Shipment, Vehicle, Request]),
+    UserModule,
+  ],
   controllers: [ReportsController],
   providers: [ReportsService],
 })

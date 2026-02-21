@@ -1,4 +1,5 @@
-import { IsString, IsNotEmpty, IsOptional, IsBoolean } from 'class-validator';
+import { IsString, IsNotEmpty, IsOptional, IsBoolean, IsEnum } from 'class-validator';
+import { DriverStatus } from '../entities/driver.entity';
 
 export class CreateDriverDto {
   @IsString()
@@ -20,4 +21,8 @@ export class CreateDriverDto {
   @IsOptional()
   @IsBoolean()
   isAvailable?: boolean;
+
+  @IsOptional()
+  @IsEnum(DriverStatus)
+  status?: DriverStatus;
 }

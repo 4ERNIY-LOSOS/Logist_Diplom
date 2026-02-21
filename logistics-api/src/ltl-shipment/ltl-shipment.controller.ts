@@ -7,7 +7,6 @@ import {
   Param,
   Delete,
   UseGuards,
-  Req,
 } from '@nestjs/common';
 import { LtlShipmentService } from './ltl-shipment.service';
 import { CreateLtlShipmentDto } from './dto/create-ltl-shipment.dto';
@@ -17,6 +16,8 @@ import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { RoleName } from '../auth/enums/role-name.enum';
 import { LtlShipmentStatus } from './enums/ltl-shipment-status.enum';
+import { GetUser } from '../auth/decorators/get-user.decorator';
+import type { RequestUser } from '../auth/interfaces/request-user.interface';
 
 @UseGuards(AuthGuard('jwt'), RolesGuard)
 @Controller('ltl-shipment')
@@ -25,8 +26,8 @@ export class LtlShipmentController {
 
   @Post()
   @Roles(RoleName.ADMIN, RoleName.LOGISTICIAN)
-  create(@Body() createLtlShipmentDto: CreateLtlShipmentDto, @Req() req) {
-    return this.ltlShipmentService.create(createLtlShipmentDto, req.user);
+  create(@Body() createLtlShipmentDto: CreateLtlShipmentDto, @GetUser() user: RequestUser) {
+    return this.ltlShipmentService.create(createLtlShipmentDto, user);
   }
 
   @Get()
@@ -55,14 +56,14 @@ export class LtlShipmentController {
   update(
     @Param('id') id: string,
     @Body() updateLtlShipmentDto: UpdateLtlShipmentDto,
-    @Req() req,
+    @GetUser() user: RequestUser,
   ) {
-    return this.ltlShipmentService.update(id, updateLtlShipmentDto, req.user);
+    return this.ltlShipmentService.update(id, updateLtlShipmentDto, user);
   }
 
   @Delete(':id')
   @Roles(RoleName.ADMIN, RoleName.LOGISTICIAN)
-  remove(@Param('id') id: string, @Req() req) {
-    return this.ltlShipmentService.remove(id, req.user);
+  remove(@Param('id') id: string, @GetUser() user: RequestUser) {
+    return this.ltlShipmentService.remove(id, user);
   }
 }

@@ -50,7 +50,7 @@ export class User {
 
   @ManyToOne('Role', 'users')
   @JoinColumn({ name: 'role_id' })
-  role: any;
+  role: Role;
 
   @Index()
   @ManyToOne('Company', 'users', {
@@ -58,7 +58,7 @@ export class User {
     onDelete: 'SET NULL',
   })
   @JoinColumn({ name: 'company_id' })
-  company: any;
+  company: Company | null;
 
   @CreateDateColumn({ type: 'timestamptz', name: 'created_at' })
   createdAt: Date;

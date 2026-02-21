@@ -5,6 +5,7 @@ import {
   ManyToOne,
   PrimaryGeneratedColumn,
 } from 'typeorm';
+import { Exclude } from 'class-transformer';
 import { LtlShipment } from '../../ltl-shipment/entities/ltl-shipment.entity';
 import { Warehouse } from '../../warehouse/entities/warehouse.entity';
 
@@ -13,9 +14,10 @@ export class ShipmentRouteStop {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
+  @Exclude()
   @ManyToOne('LtlShipment', 'routeStops', { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'ltl_shipment_id' })
-  ltlShipment: any;
+  ltlShipment: LtlShipment;
 
   @ManyToOne(() => Warehouse)
   @JoinColumn({ name: 'warehouse_id' })

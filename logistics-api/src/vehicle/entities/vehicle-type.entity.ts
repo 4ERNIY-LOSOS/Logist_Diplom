@@ -12,6 +12,6 @@ export class VehicleType {
   @Column({ nullable: true })
   description: string;
 
-  @OneToMany(() => Vehicle, (vehicle) => vehicle.type)
+  @OneToMany('Vehicle', 'type')
   vehicles: Vehicle[];
 }

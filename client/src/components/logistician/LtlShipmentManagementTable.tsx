@@ -26,28 +26,10 @@ import {
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import AddIcon from '@mui/icons-material/Add';
-import api from '../../api/api';
+import { ltlShipmentService } from '../../services/ltl-shipment.service';
+import { shipmentService } from '../../services/shipment.service';
+import type { Shipment, LtlShipment } from '../../types';
 import moment from 'moment';
-
-interface Shipment {
-    id: string;
-    request: {
-        id: string;
-        pickupAddress: { city: string; street: string; };
-        deliveryAddress: { city: string; street: string; };
-    };
-    driver: { firstName: string; lastName: string; };
-    vehicle: { licensePlate: string; model: string; };
-    ltlShipment?: any;
-}
-
-interface LtlShipment {
-  id: string;
-  voyageCode: string;
-  departureDate: string;
-  arrivalDate: string;
-  shipments: Shipment[];
-}
 
 export const LtlShipmentManagementTable: React.FC = () => {
   const [ltlShipments, setLtlShipments] = useState<LtlShipment[]>([]);
@@ -68,12 +50,13 @@ export const LtlShipmentManagementTable: React.FC = () => {
   const fetchLtlShipmentsAndShipments = async () => {
     setLoading(true);
     try {
-      const [ltlRes, shipmentsRes] = await Promise.all([
-        api.get<LtlShipment[]>('/ltl-shipment'),
-        api.get<Shipment[]>('/shipment', { params: { ltlShipmentId: 'null' } }) // Fetch shipments not yet assigned to an LTL shipment
+      const [ltlData, shipmentsData] = await Promise.all([
+        ltlShipmentService.getAll(),
+        shipmentService.getAll() // The backend might need a filter, but here we filter client-side for simplicity if not many
       ]);
-      setLtlShipments(ltlRes.data);
-      setAvailableShipments(shipmentsRes.data.filter(s => !s.ltlShipment)); // Filter out shipments already in an LTL shipment
+      setLtlShipments(ltlData);
+      // Filter shipments that are 'Planned' and not in an LTL shipment
+      setAvailableShipments(shipmentsData.filter(s => s.status.name === 'Запланирована'));
     } catch (err) {
       setError('Failed to fetch data.');
       console.error(err);
@@ -83,7 +66,16 @@ export const LtlShipmentManagementTable: React.FC = () => {
   };
 
   const handleAddClick = () => {
-    setCurrentLtlShipment({ id: '', voyageCode: '', departureDate: moment().format('YYYY-MM-DD'), arrivalDate: moment().format('YYYY-MM-DD'), shipments: [] });
+    setCurrentLtlShipment({
+        id: '',
+        voyageCode: '',
+        departureDate: moment().format('YYYY-MM-DD'),
+        arrivalDate: moment().format('YYYY-MM-DD'),
+        status: 'CONSOLIDATING',
+        consolidatedWeight: 0,
+        consolidatedVolume: 0,
+        shipments: []
+    });
     setIsNewLtlShipment(true);
     setOpenDialog(true);
   };
@@ -108,16 +100,16 @@ export const LtlShipmentManagementTable: React.FC = () => {
     if (!currentLtlShipment) return;
     try {
       if (isNewLtlShipment) {
-        await api.post('/ltl-shipment', {
+        await ltlShipmentService.create({
             ...currentLtlShipment,
             shipmentIds: selectedShipmentsToAdd,
-        });
-      } else {
-        await api.patch(`/ltl-shipment/${currentLtlShipment.id}`, {
+        } as any);
+      } else if (currentLtlShipment.id) {
+        await ltlShipmentService.update(currentLtlShipment.id, {
             ...currentLtlShipment,
             shipmentIdsToAdd: selectedShipmentsToAdd.length > 0 ? selectedShipmentsToAdd : undefined,
             shipmentIdsToRemove: selectedShipmentsToRemove.length > 0 ? selectedShipmentsToRemove : undefined,
-        });
+        } as any);
       }
       handleDialogClose();
       fetchLtlShipmentsAndShipments();
@@ -130,7 +122,7 @@ export const LtlShipmentManagementTable: React.FC = () => {
   const handleDeleteLtlShipment = async (ltlShipmentId: string) => {
     if (window.confirm('Вы уверены, что хотите удалить эту сборную перевозку? Это также отменит связь с включенными перевозками.')) {
       try {
-        await api.delete(`/ltl-shipment/${ltlShipmentId}`);
+        await ltlShipmentService.delete(ltlShipmentId);
         fetchLtlShipmentsAndShipments();
       } catch (err) {
         setError('Failed to delete LTL shipment.');

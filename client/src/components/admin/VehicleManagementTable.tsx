@@ -26,7 +26,8 @@ import {
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import AddIcon from '@mui/icons-material/Add';
-import api from '../../api/api';
+import { shipmentService } from '../../services/shipment.service';
+import type { Vehicle, VehicleType } from '../../types';
 
 const VehicleStatus = {
   AVAILABLE: 'AVAILABLE',
@@ -36,20 +37,9 @@ const VehicleStatus = {
 
 type VehicleStatusType = (typeof VehicleStatus)[keyof typeof VehicleStatus];
 
-interface Vehicle {
-  id: string;
-  licensePlate: string;
-  model: string;
-  payloadCapacity: number;
-  volumeCapacity: number;
-  status: VehicleStatusType;
-  isAvailable: boolean;
-  type?: { id: string; name: string };
-}
-
 export const VehicleManagementTable: React.FC = () => {
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
-  const [vehicleTypes, setVehicleTypes] = useState<{id: string, name: string}[]>([]);
+  const [vehicleTypes, setVehicleTypes] = useState<VehicleType[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [openDialog, setOpenDialog] = useState(false);
@@ -62,8 +52,8 @@ export const VehicleManagementTable: React.FC = () => {
 
   const fetchVehicles = async () => {
     try {
-      const response = await api.get('/vehicle');
-      setVehicles(response.data.data || response.data);
+      const data = await shipmentService.getVehicles();
+      setVehicles(data);
     } catch (err) {
       setError('Failed to fetch vehicles.');
     }
@@ -71,11 +61,8 @@ export const VehicleManagementTable: React.FC = () => {
 
   const fetchVehicleTypes = async () => {
     try {
-      // Assuming there is an endpoint or just static types for now
-      // Let's check if there is a vehicle type controller/service later if this fails
-      // For now, let's assume it's part of the seeding or another endpoint
-      const response = await api.get('/vehicle/types');
-      setVehicleTypes(response.data);
+      const data = await shipmentService.getVehicleTypes();
+      setVehicleTypes(data);
     } catch (err) {
       console.warn('Could not fetch vehicle types');
     } finally {
@@ -102,9 +89,9 @@ export const VehicleManagementTable: React.FC = () => {
     if (!currentVehicle) return;
     try {
       if (currentVehicle.id) {
-        await api.patch(`/vehicle/${currentVehicle.id}`, currentVehicle);
+        await shipmentService.updateVehicle(currentVehicle.id, currentVehicle);
       } else {
-        await api.post('/vehicle', currentVehicle);
+        await shipmentService.createVehicle(currentVehicle);
       }
       handleDialogClose();
       fetchVehicles();
@@ -116,7 +103,7 @@ export const VehicleManagementTable: React.FC = () => {
   const handleDelete = async (id: string) => {
     if (window.confirm('Are you sure you want to delete this vehicle?')) {
       try {
-        await api.delete(`/vehicle/${id}`);
+        await shipmentService.deleteVehicle(id);
         fetchVehicles();
       } catch (err) {
         setError('Failed to delete vehicle.');

@@ -26,7 +26,8 @@ import {
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import AddIcon from '@mui/icons-material/Add';
-import api from '../../api/api';
+import { shipmentService } from '../../services/shipment.service';
+import type { Driver } from '../../types';
 
 const DriverStatus = {
   AVAILABLE: 'AVAILABLE',
@@ -35,16 +36,6 @@ const DriverStatus = {
 } as const;
 
 type DriverStatusType = (typeof DriverStatus)[keyof typeof DriverStatus];
-
-interface Driver {
-  id: string;
-  firstName: string;
-  lastName: string;
-  licenseNumber: string;
-  phone?: string;
-  status: DriverStatusType;
-  isAvailable: boolean;
-}
 
 export const DriverManagementTable: React.FC = () => {
   const [drivers, setDrivers] = useState<Driver[]>([]);
@@ -60,9 +51,8 @@ export const DriverManagementTable: React.FC = () => {
   const fetchDrivers = async () => {
     setLoading(true);
     try {
-      const response = await api.get('/driver');
-      // Driver API returns { data: Driver[], total: number } based on my previous check of driver.service.ts
-      setDrivers(response.data.data || response.data);
+      const data = await shipmentService.getDrivers();
+      setDrivers(data);
     } catch (err) {
       setError('Failed to fetch drivers.');
     } finally {
@@ -89,9 +79,9 @@ export const DriverManagementTable: React.FC = () => {
     if (!currentDriver) return;
     try {
       if (currentDriver.id) {
-        await api.patch(`/driver/${currentDriver.id}`, currentDriver);
+        await shipmentService.updateDriver(currentDriver.id, currentDriver);
       } else {
-        await api.post('/driver', currentDriver);
+        await shipmentService.createDriver(currentDriver);
       }
       handleDialogClose();
       fetchDrivers();
@@ -103,7 +93,7 @@ export const DriverManagementTable: React.FC = () => {
   const handleDelete = async (id: string) => {
     if (window.confirm('Are you sure you want to delete this driver?')) {
       try {
-        await api.delete(`/driver/${id}`);
+        await shipmentService.deleteDriver(id);
         fetchDrivers();
       } catch (err) {
         setError('Failed to delete driver.');

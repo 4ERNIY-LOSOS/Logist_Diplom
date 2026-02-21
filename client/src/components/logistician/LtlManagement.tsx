@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import api from '../../api/api';
+import { ltlShipmentService } from '../../services/ltl-shipment.service';
+import { shipmentService } from '../../services/shipment.service';
+import type { Shipment, LtlShipment } from '../../types';
 import {
   Box,
   Button,
@@ -17,26 +19,6 @@ import {
   Divider,
 } from '@mui/material';
 
-interface Shipment {
-  id: string;
-  request: {
-    id: string;
-    company: { name: string };
-    pickupAddress: { city: string };
-    deliveryAddress: { city: string };
-    cargos: any[];
-  };
-  status: { name: string };
-}
-
-interface LtlShipment {
-    id: string;
-    status: string;
-    consolidatedWeight: number;
-    consolidatedVolume: number;
-    shipments: Shipment[];
-}
-
 const LtlManagement: React.FC = () => {
   const [availableShipments, setAvailableShipments] = useState<Shipment[]>([]);
   const [ltlShipments, setLtlShipments] = useState<LtlShipment[]>([]);
@@ -47,17 +29,17 @@ const LtlManagement: React.FC = () => {
 
   const fetchData = async () => {
     try {
-      const [shipRes, ltlRes] = await Promise.all([
-        api.get('/shipment'),
-        api.get('/ltl-shipment'),
+      const [shipmentsData, ltlData] = await Promise.all([
+        shipmentService.getAll(),
+        ltlShipmentService.getAll(),
       ]);
 
       // Only shipments in 'Запланирована' that are NOT already in LTL
-      setAvailableShipments(shipRes.data.filter((s: any) =>
+      setAvailableShipments(shipmentsData.filter((s) =>
         s.status.name === 'Запланирована' && !s.ltlShipment
       ));
-      setLtlShipments(ltlRes.data);
-    } catch (err: any) {
+      setLtlShipments(ltlData);
+    } catch (err) {
       setError('Failed to load data');
     } finally {
       setLoading(false);
@@ -77,9 +59,12 @@ const LtlManagement: React.FC = () => {
   const handleCreateLtl = async () => {
     if (selectedIds.length === 0) return;
     try {
-      await api.post('/ltl-shipment', {
+      await ltlShipmentService.create({
         shipmentIds: selectedIds,
-        notes: `Created from UI at ${new Date().toLocaleString()}`,
+        voyageCode: `V-${Date.now()}`,
+        departureDate: new Date().toISOString(),
+        arrivalDate: new Date(Date.now() + 86400000).toISOString(),
+        status: 'CONSOLIDATING',
       });
       setMessage('LTL Shipment created successfully!');
       setSelectedIds([]);
@@ -91,10 +76,10 @@ const LtlManagement: React.FC = () => {
 
   const handleUpdateStatus = async (id: string, status: string) => {
       try {
-          await api.patch(`/ltl-shipment/${id}/status`, { status });
+          await ltlShipmentService.updateStatus(id, status);
           setMessage(`LTL Shipment status updated to ${status}`);
           fetchData();
-      } catch (err: any) {
+      } catch (err) {
           setError('Failed to update status');
       }
   }

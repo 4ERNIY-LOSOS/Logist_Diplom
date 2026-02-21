@@ -1,234 +1,371 @@
 import React, { useState } from 'react';
+import { useForm, useFieldArray } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import * as z from 'zod';
 import {
   Box,
   Button,
   TextField,
   Typography,
-  Paper,
-  Alert,
-  MenuItem,
   IconButton,
+  Card,
+  CardContent,
+  Divider,
+  Alert,
+  CircularProgress,
+  MenuItem,
+  Grid,
 } from '@mui/material';
-import AddCircleIcon from '@mui/icons-material/AddCircle';
 import DeleteIcon from '@mui/icons-material/Delete';
-import AttachFileIcon from '@mui/icons-material/AttachFile';
-import api from '../../api/api';
+import AddIcon from '@mui/icons-material/Add';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import { requestService } from '../../services/request.service';
+import { geocodingService } from '../../services/geocoding.service';
 
-// Interfaces remain the same for now
-interface CargoItem {
-  name: string;
-  description?: string;
-  weight: number;
-  volume: number;
-  type: string;
-}
-interface Address {
-  country: string;
-  city: string;
-  street: string;
-  houseNumber: string;
-  apartment?: string;
-  postalCode: string;
-}
+const addressSchema = z.object({
+  country: z.string().min(2, 'Обязательное поле'),
+  city: z.string().min(2, 'Обязательное поле'),
+  street: z.string().min(2, 'Обязательное поле'),
+  houseNumber: z.string().min(1, 'Обязательное поле'),
+  apartment: z.string().optional(),
+  postalCode: z.string().min(3, 'Обязательное поле'),
+});
+
+const cargoSchema = z.object({
+  name: z.string().min(2, 'Название груза обязательно'),
+  description: z.string().optional(),
+  weight: z.number().min(0, 'Вес должен быть положительным'),
+  volume: z.number().min(0, 'Объем должен быть положительным'),
+  type: z.string().min(1, 'Выберите тип груза'),
+});
+
+const requestSchema = z.object({
+  pickupDate: z.string().min(1, 'Дата забора обязательна'),
+  deliveryDate: z.string().min(1, 'Дата доставки обязательна'),
+  pickupAddress: addressSchema,
+  deliveryAddress: addressSchema,
+  cargos: z.array(cargoSchema).min(1, 'Добавьте хотя бы один груз'),
+  notes: z.string().optional(),
+});
+
+type RequestFormValues = z.infer<typeof requestSchema>;
 
 interface CreateRequestFormProps {
   onSuccess: () => void;
+  onCancel: () => void;
 }
 
-const CreateRequestForm: React.FC<CreateRequestFormProps> = ({ onSuccess }) => {
-    const [pickupDate, setPickupDate] = useState('');
-    const [deliveryDate, setDeliveryDate] = useState('');
-    const [pickupAddress, setPickupAddress] = useState<Address>({ country: '', city: '', street: '', houseNumber: '', postalCode: '' });
-    const [deliveryAddress, setDeliveryAddress] = useState<Address>({ country: '', city: '', street: '', houseNumber: '', postalCode: '' });
-    const [cargos, setCargos] = useState<CargoItem[]>([{ name: '', weight: 0, volume: 0, type: 'General' }]);
-    const [notes, setNotes] = useState('');
-    const [distanceKm, setDistanceKm] = useState<number | ''>(''); // New state for distance
-    const [selectedFile, setSelectedFile] = useState<File | null>(null); // New state for file upload
-    const [preliminaryCost, setPreliminaryCost] = useState<number | null>(null); // To display after submission
+const CreateRequestForm: React.FC<CreateRequestFormProps> = ({ onSuccess, onCancel }) => {
+  const [error, setError] = useState<string | null>(null);
+  const [isConfirming, setIsConfirming] = useState(false);
+  const [isGeocoding, setIsGeocoding] = useState(false);
+  const [formData, setFormData] = useState<RequestFormValues | null>(null);
+  const [pickupCoords, setPickupCoords] = useState<{ lat: number; lon: number } | null>(null);
+  const [deliveryCoords, setDeliveryCoords] = useState<{ lat: number; lon: number } | null>(null);
 
-    const [message, setMessage] = useState<string | null>(null);
-    const [error, setError] = useState<string | null>(null);
-  
-    const handleCargoChange = (index: number, field: keyof CargoItem, value: string | number) => {
-      const newCargos = [...cargos];
-      if (field === 'weight' || field === 'volume') {
-        newCargos[index][field] = Number(value) < 0 ? 0 : Number(value);
-      } else {
-        newCargos[index][field] = value as string;
+  const {
+    register,
+    control,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+  } = useForm<RequestFormValues>({
+    resolver: zodResolver(requestSchema),
+    defaultValues: {
+      pickupDate: new Date().toISOString().split('T')[0],
+      deliveryDate: new Date(Date.now() + 86400000).toISOString().split('T')[0],
+      cargos: [{ name: '', weight: 0, volume: 0, type: 'Обычный' }],
+      pickupAddress: { country: 'Россия', city: '', street: '', houseNumber: '', postalCode: '' },
+      deliveryAddress: { country: 'Россия', city: '', street: '', houseNumber: '', postalCode: '' },
+    },
+  });
+
+  const { fields, append, remove } = useFieldArray({
+    control,
+    name: 'cargos',
+  });
+
+  const handlePreview = async (data: RequestFormValues) => {
+    setError(null);
+    setIsGeocoding(true);
+    try {
+      const [pCoords, dCoords] = await Promise.all([
+        geocodingService.geocodeAddress(data.pickupAddress),
+        geocodingService.geocodeAddress(data.deliveryAddress)
+      ]);
+
+      if (!pCoords) {
+        setError('Адрес отправления не найден. Пожалуйста, уточните данные.');
+        return;
       }
-      setCargos(newCargos);
-    };
-  
-    const addCargo = () => setCargos([...cargos, { name: '', weight: 0, volume: 0, type: 'General' }]);
-    const removeCargo = (index: number) => setCargos(cargos.filter((_, i) => i !== index));
-  
-    const handleAddressChange = (type: 'pickup' | 'delivery', field: keyof Address, value: string) => {
-      const setter = type === 'pickup' ? setPickupAddress : setDeliveryAddress;
-      setter(prev => ({ ...prev, [field]: value }));
-    };
-
-    const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-        if (event.target.files && event.target.files.length > 0) {
-            setSelectedFile(event.target.files[0]);
-        } else {
-            setSelectedFile(null);
-        }
-    };
-    
-    const resetForm = () => {
-      setPickupDate('');
-      setDeliveryDate('');
-      setPickupAddress({ country: '', city: '', street: '', houseNumber: '', postalCode: '' });
-      setDeliveryAddress({ country: '', city: '', street: '', houseNumber: '', postalCode: '' });
-      setCargos([{ name: '', weight: 0, volume: 0, type: 'General' }]);
-      setNotes('');
-      setDistanceKm('');
-      setSelectedFile(null);
-      setPreliminaryCost(null);
-    };
-  
-    const handleSubmit = async (e: React.FormEvent) => {
-      e.preventDefault();
-      setMessage(null);
-      setError(null);
-      setPreliminaryCost(null); // Clear previous cost
-
-      try {
-        const requestData = {
-            pickupDate,
-            deliveryDate,
-            pickupAddress,
-            deliveryAddress,
-            cargos,
-            notes,
-            distanceKm: distanceKm === '' ? undefined : Number(distanceKm), // Only send if not empty
-        };
-
-        const response = await api.post('/request', requestData); // Send request data first
-        setMessage('Заявка успешно создана!');
-        setPreliminaryCost(response.data.preliminaryCost); // Assuming backend returns cost
-
-        // If a file is selected, upload it separately after request is created
-        if (selectedFile) {
-            const formData = new FormData();
-            formData.append('file', selectedFile);
-            formData.append('requestId', response.data.id); // Associate with the newly created request
-            // Add other document details if necessary, e.g., formData.append('type', 'BILL_OF_LADING');
-            
-            await api.post('/document/upload', formData, {
-                headers: {
-                    'Content-Type': 'multipart/form-data',
-                },
-            });
-            setMessage(prev => (prev ? prev + ' Файл успешно загружен!' : 'Файл успешно загружен!'));
-        }
-
-        resetForm();
-        onSuccess(); // Call the success handler
-      } catch (err: any) {
-        setError(err.response?.data?.message || 'Не удалось создать заявку.');
+      if (!dCoords) {
+        setError('Адрес назначения не найден. Пожалуйста, уточните данные.');
+        return;
       }
-    };
 
-
-  const AddressFields: React.FC<{ type: 'pickup' | 'delivery' }> = ({ type }) => {
-    const address = type === 'pickup' ? pickupAddress : deliveryAddress;
-    return (
-      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-        <TextField fullWidth label="Страна" value={address.country} onChange={e => handleAddressChange(type, 'country', e.target.value)} required />
-        <TextField fullWidth label="Город" value={address.city} onChange={e => handleAddressChange(type, 'city', e.target.value)} required />
-        <TextField fullWidth label="Улица" value={address.street} onChange={e => handleAddressChange(type, 'street', e.target.value)} required />
-        <TextField fullWidth label="Номер дома" value={address.houseNumber} onChange={e => handleAddressChange(type, 'houseNumber', e.target.value)} required />
-        <TextField fullWidth label="Квартира/офис (необязательно)" value={address.apartment || ''} onChange={e => handleAddressChange(type, 'apartment', e.target.value)} />
-        <TextField fullWidth label="Почтовый индекс" value={address.postalCode} onChange={e => handleAddressChange(type, 'postalCode', e.target.value)} required />
-      </Box>
-    );
+      setPickupCoords(pCoords);
+      setDeliveryCoords(dCoords);
+      setFormData(data);
+      setIsConfirming(true);
+    } catch (err) {
+      setError('Ошибка при проверке адресов. Попробуйте еще раз.');
+    } finally {
+      setIsGeocoding(false);
+    }
   };
 
-  return (
-    <Box component={Paper} sx={{ p: 4, my: 2 }}>
-      <Typography variant="h5" gutterBottom>Создание новой заявки</Typography>
-      {message && <Alert severity="success" sx={{ mb: 2 }}>{message} {preliminaryCost !== null && `Предварительная стоимость: ${preliminaryCost} ₽`}</Alert>}
-      {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
-      <Box component="form" onSubmit={handleSubmit} sx={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-        
-        <Box>
-          <Typography variant="h6">Даты</Typography>
-          <Box sx={{ display: 'flex', gap: 2, flexDirection: { xs: 'column', sm: 'row' } }}>
-            <TextField fullWidth type="date" label="Дата забора" value={pickupDate} onChange={e => setPickupDate(e.target.value)} required InputLabelProps={{ shrink: true }} />
-            <TextField fullWidth type="date" label="Дата доставки" value={deliveryDate} onChange={e => setDeliveryDate(e.target.value)} required InputLabelProps={{ shrink: true }} />
-          </Box>
-        </Box>
-        
-        <Box sx={{ display: 'flex', gap: 4, flexDirection: { xs: 'column', md: 'row' } }}>
-            <Box sx={{ flex: 1 }}>
-                <Typography variant="h6">Адрес забора</Typography>
-                <AddressFields type="pickup" />
-            </Box>
-            <Box sx={{ flex: 1 }}>
-                <Typography variant="h6">Адрес доставки</Typography>
-                <AddressFields type="delivery" />
-            </Box>
-        </Box>
+  const onConfirm = async () => {
+    if (!formData || !pickupCoords || !deliveryCoords) return;
+    setError(null);
+    try {
+      await requestService.create({
+        ...formData,
+        pickupAddress: { ...formData.pickupAddress, latitude: pickupCoords.lat, longitude: pickupCoords.lon },
+        deliveryAddress: { ...formData.deliveryAddress, latitude: deliveryCoords.lat, longitude: deliveryCoords.lon },
+        pickupDate: new Date(formData.pickupDate).toISOString(),
+        deliveryDate: new Date(formData.deliveryDate).toISOString(),
+      });
+      onSuccess();
+    } catch (err: any) {
+      setError(err.message || 'Ошибка при создании заявки');
+    }
+  };
 
-        <Box>
-          <Typography variant="h6">Информация о грузе</Typography>
-          {cargos.map((cargo, index) => (
-            <Paper key={index} variant="outlined" sx={{ p: 2, mb: 2, position: 'relative' }}>
-                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
-                    <TextField sx={{ flex: '1 1 48%'}} label="Наименование" value={cargo.name} onChange={e => handleCargoChange(index, 'name', e.target.value)} required />
-                    <TextField sx={{ flex: '1 1 48%'}} label="Описание (необязательно)" value={cargo.description || ''} onChange={e => handleCargoChange(index, 'description', e.target.value)} />
-                    <TextField sx={{ flex: '1 1 23%'}} type="number" label="Вес (кг)" value={cargo.weight} onChange={e => handleCargoChange(index, 'weight', e.target.value)} required />
-                    <TextField sx={{ flex: '1 1 23%'}} type="number" label="Объем (м³)" value={cargo.volume} onChange={e => handleCargoChange(index, 'volume', e.target.value)} required />
-                    <TextField sx={{ flex: '1 1 48%'}} select label="Тип" value={cargo.type} onChange={e => handleCargoChange(index, 'type', e.target.value)} required>
-                      <MenuItem value="General">Обычный</MenuItem>
-                      <MenuItem value="Dangerous">Опасный</MenuItem>
-                      <MenuItem value="Perishable">Скоропортящийся</MenuItem>
-                    </TextField>
+  if (isConfirming && formData) {
+    return (
+      <Box>
+        <Typography variant="h5" gutterBottom fontWeight="bold">
+          Проверьте данные заявки
+        </Typography>
+        <Alert severity="info" sx={{ mb: 3 }}>
+          Пожалуйста, убедитесь, что вся информация указана верно перед отправкой.
+        </Alert>
+
+        <Grid container spacing={3}>
+          <Grid size={{ xs: 12, md: 6 }}>
+            <Card variant="outlined">
+              <CardContent>
+                <Typography variant="subtitle1" fontWeight="bold">Сроки</Typography>
+                <Typography>Забор: {formData.pickupDate}</Typography>
+                <Typography>Доставка: {formData.deliveryDate}</Typography>
+              </CardContent>
+            </Card>
+          </Grid>
+          <Grid size={{ xs: 12, md: 6 }}>
+            <Card variant="outlined">
+              <CardContent>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <Typography variant="subtitle1" fontWeight="bold">Пункт отправления</Typography>
+                  <CheckCircleIcon color="success" fontSize="small" />
                 </Box>
-              {cargos.length > 1 && (
-                  <IconButton onClick={() => removeCargo(index)} size="small" sx={{ position: 'absolute', top: 8, right: 8 }}>
-                      <DeleteIcon />
-                  </IconButton>
-              )}
-            </Paper>
-          ))}
-          <Button startIcon={<AddCircleIcon />} onClick={addCargo}>Добавить груз</Button>
-        </Box>
-
-        <Box>
-            <Typography variant="h6">Расстояние и Документы</Typography>
-            <TextField
-                fullWidth
-                type="number"
-                label="Расстояние (км) для расчета стоимости"
-                value={distanceKm}
-                onChange={e => setDistanceKm(e.target.value === '' ? '' : Number(e.target.value))}
-                margin="normal"
-            />
-            <Button
-                variant="contained"
-                component="label"
-                startIcon={<AttachFileIcon />}
-                sx={{ mt: 2 }}
-            >
-                {selectedFile ? selectedFile.name : 'Прикрепить документ'}
-                <input type="file" hidden onChange={handleFileChange} />
-            </Button>
-            {selectedFile && (
-                <Typography variant="body2" color="textSecondary" sx={{ mt: 1 }}>
-                    Выбран файл: {selectedFile.name}
+                <Typography>
+                  {formData.pickupAddress.country}, г. {formData.pickupAddress.city}, {formData.pickupAddress.street}, д. {formData.pickupAddress.houseNumber}
                 </Typography>
-            )}
-        </Box>
+                <Typography variant="caption" color="text.secondary">
+                  Координаты: {pickupCoords?.lat.toFixed(4)}, {pickupCoords?.lon.toFixed(4)}
+                </Typography>
+              </CardContent>
+            </Card>
+          </Grid>
+          <Grid size={{ xs: 12, md: 6 }}>
+            <Card variant="outlined">
+              <CardContent>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <Typography variant="subtitle1" fontWeight="bold">Пункт назначения</Typography>
+                  <CheckCircleIcon color="success" fontSize="small" />
+                </Box>
+                <Typography>
+                  {formData.deliveryAddress.country}, г. {formData.deliveryAddress.city}, {formData.deliveryAddress.street}, д. {formData.deliveryAddress.houseNumber}
+                </Typography>
+                <Typography variant="caption" color="text.secondary">
+                  Координаты: {deliveryCoords?.lat.toFixed(4)}, {deliveryCoords?.lon.toFixed(4)}
+                </Typography>
+              </CardContent>
+            </Card>
+          </Grid>
+          <Grid size={{ xs: 12 }}>
+            <Card variant="outlined">
+              <CardContent>
+                <Typography variant="subtitle1" fontWeight="bold" gutterBottom>Грузы</Typography>
+                {formData.cargos.map((cargo, idx) => (
+                  <Box key={idx} sx={{ mb: 1 }}>
+                    <Typography variant="body2">
+                      {idx + 1}. {cargo.name} — {cargo.weight}кг, {cargo.volume}м³ ({cargo.type})
+                    </Typography>
+                  </Box>
+                ))}
+              </CardContent>
+            </Card>
+          </Grid>
+        </Grid>
 
-        <Box>
-          <Typography variant="h6">Примечания</Typography>
-          <TextField fullWidth multiline rows={3} label="Примечания (необязательно)" value={notes} onChange={e => setNotes(e.target.value)} />
+        <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 2, mt: 4 }}>
+          <Button variant="outlined" onClick={() => setIsConfirming(false)}>Назад к редактированию</Button>
+          <Button variant="contained" onClick={onConfirm} disabled={isSubmitting}>
+            {isSubmitting ? <CircularProgress size={24} /> : 'Всё верно, отправить'}
+          </Button>
         </Box>
-        
-        <Button type="submit" fullWidth variant="contained" size="large">Отправить заявку</Button>
-        
+      </Box>
+    );
+  }
+
+  return (
+    <Box component="form" onSubmit={handleSubmit(handlePreview)} noValidate>
+      <Typography variant="h5" gutterBottom fontWeight="bold">
+        Новая заявка на перевозку
+      </Typography>
+
+      {error && <Alert severity="error" sx={{ mb: 3 }}>{error}</Alert>}
+
+      <Grid container spacing={4}>
+        {/* Dates */}
+        <Grid size={{ xs: 12, md: 6 }}>
+          <Card variant="outlined">
+            <CardContent>
+              <Typography variant="h6" gutterBottom>Сроки</Typography>
+              <Grid container spacing={2}>
+                <Grid size={{ xs: 6 }}>
+                  <TextField
+                    fullWidth
+                    label="Дата забора"
+                    type="date"
+                    InputLabelProps={{ shrink: true }}
+                    {...register('pickupDate')}
+                    error={!!errors.pickupDate}
+                    helperText={errors.pickupDate?.message}
+                  />
+                </Grid>
+                <Grid size={{ xs: 6 }}>
+                  <TextField
+                    fullWidth
+                    label="Дата доставки"
+                    type="date"
+                    InputLabelProps={{ shrink: true }}
+                    {...register('deliveryDate')}
+                    error={!!errors.deliveryDate}
+                    helperText={errors.deliveryDate?.message}
+                  />
+                </Grid>
+              </Grid>
+            </CardContent>
+          </Card>
+        </Grid>
+
+        <Grid size={{ xs: 12, md: 6 }}>
+           <Card variant="outlined">
+            <CardContent>
+              <Typography variant="h6" gutterBottom>Дополнительно</Typography>
+              <TextField
+                fullWidth
+                label="Примечания"
+                multiline
+                rows={2}
+                {...register('notes')}
+              />
+            </CardContent>
+          </Card>
+        </Grid>
+
+        {/* Addresses */}
+        <Grid size={{ xs: 12, md: 6 }}>
+          <Typography variant="h6" gutterBottom sx={{ ml: 1 }}>Пункт отправления</Typography>
+          <Card variant="outlined">
+            <CardContent>
+              <Grid container spacing={2}>
+                <Grid size={{ xs: 12, sm: 6 }}>
+                  <TextField fullWidth label="Страна" {...register('pickupAddress.country')} error={!!errors.pickupAddress?.country} />
+                </Grid>
+                <Grid size={{ xs: 12, sm: 6 }}>
+                  <TextField fullWidth label="Город" {...register('pickupAddress.city')} error={!!errors.pickupAddress?.city} />
+                </Grid>
+                <Grid size={{ xs: 12, sm: 8 }}>
+                  <TextField fullWidth label="Улица" {...register('pickupAddress.street')} error={!!errors.pickupAddress?.street} />
+                </Grid>
+                <Grid size={{ xs: 12, sm: 4 }}>
+                  <TextField fullWidth label="Дом" {...register('pickupAddress.houseNumber')} error={!!errors.pickupAddress?.houseNumber} />
+                </Grid>
+                <Grid size={{ xs: 12, sm: 6 }}>
+                  <TextField fullWidth label="Индекс" {...register('pickupAddress.postalCode')} error={!!errors.pickupAddress?.postalCode} />
+                </Grid>
+              </Grid>
+            </CardContent>
+          </Card>
+        </Grid>
+
+        <Grid size={{ xs: 12, md: 6 }}>
+          <Typography variant="h6" gutterBottom sx={{ ml: 1 }}>Пункт назначения</Typography>
+          <Card variant="outlined">
+            <CardContent>
+              <Grid container spacing={2}>
+                <Grid size={{ xs: 12, sm: 6 }}>
+                  <TextField fullWidth label="Страна" {...register('deliveryAddress.country')} error={!!errors.deliveryAddress?.country} />
+                </Grid>
+                <Grid size={{ xs: 12, sm: 6 }}>
+                  <TextField fullWidth label="Город" {...register('deliveryAddress.city')} error={!!errors.deliveryAddress?.city} />
+                </Grid>
+                <Grid size={{ xs: 12, sm: 8 }}>
+                  <TextField fullWidth label="Улица" {...register('deliveryAddress.street')} error={!!errors.deliveryAddress?.street} />
+                </Grid>
+                <Grid size={{ xs: 12, sm: 4 }}>
+                  <TextField fullWidth label="Дом" {...register('deliveryAddress.houseNumber')} error={!!errors.deliveryAddress?.houseNumber} />
+                </Grid>
+                <Grid size={{ xs: 12, sm: 6 }}>
+                  <TextField fullWidth label="Индекс" {...register('deliveryAddress.postalCode')} error={!!errors.deliveryAddress?.postalCode} />
+                </Grid>
+              </Grid>
+            </CardContent>
+          </Card>
+        </Grid>
+
+        {/* Cargos */}
+        <Grid size={{ xs: 12 }}>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+            <Typography variant="h6">Грузы</Typography>
+            <Button startIcon={<AddIcon />} onClick={() => append({ name: '', weight: 0, volume: 0, type: 'Обычный' })}>
+              Добавить груз
+            </Button>
+          </Box>
+
+          {fields.map((field, index) => (
+            <Card key={field.id} variant="outlined" sx={{ mb: 2, position: 'relative' }}>
+              <CardContent>
+                <Grid container spacing={2} alignItems="center">
+                  <Grid size={{ xs: 12, sm: 3 }}>
+                    <TextField fullWidth label="Наименование" {...register(`cargos.${index}.name` as const)} error={!!errors.cargos?.[index]?.name} />
+                  </Grid>
+                  <Grid size={{ xs: 12, sm: 2 }}>
+                    <TextField fullWidth label="Вес (кг)" type="number" {...register(`cargos.${index}.weight` as const, { valueAsNumber: true })} />
+                  </Grid>
+                  <Grid size={{ xs: 12, sm: 2 }}>
+                    <TextField fullWidth label="Объем (м³)" type="number" {...register(`cargos.${index}.volume` as const, { valueAsNumber: true })} />
+                  </Grid>
+                  <Grid size={{ xs: 12, sm: 3 }}>
+                    <TextField select fullWidth label="Тип" {...register(`cargos.${index}.type` as const)} defaultValue="Обычный">
+                      <MenuItem value="Обычный">Обычный</MenuItem>
+                      <MenuItem value="Опасный (ADR)">Опасный (ADR)</MenuItem>
+                      <MenuItem value="Температурный">Температурный</MenuItem>
+                      <MenuItem value="Хрупкий">Хрупкий</MenuItem>
+                    </TextField>
+                  </Grid>
+                  <Grid size={{ xs: 12, sm: 2 }}>
+                    <IconButton color="error" onClick={() => remove(index)} disabled={fields.length === 1}>
+                      <DeleteIcon />
+                    </IconButton>
+                  </Grid>
+                </Grid>
+              </CardContent>
+            </Card>
+          ))}
+          {errors.cargos?.root && <Typography color="error">{errors.cargos.root.message}</Typography>}
+        </Grid>
+      </Grid>
+
+      <Divider sx={{ my: 4 }} />
+
+      <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 2 }}>
+        <Button variant="outlined" onClick={onCancel}>Отмена</Button>
+        <Button variant="contained" type="submit" disabled={isSubmitting || isGeocoding}>
+          {isSubmitting || isGeocoding ? <CircularProgress size={24} /> : 'Проверить и создать'}
+        </Button>
       </Box>
     </Box>
   );

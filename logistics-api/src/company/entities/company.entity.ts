@@ -26,12 +26,15 @@ export class Company {
   @Column({ nullable: true })
   email: string;
 
+  @Column({ nullable: true })
+  address: string;
+
   @Column({ name: 'is_active', default: true })
   isActive: boolean;
 
   @Exclude()
   @OneToMany('User', 'company')
-  users: any[];
+  users: User[];
 
   @CreateDateColumn({ type: 'timestamptz', name: 'created_at' })
   createdAt: Date;

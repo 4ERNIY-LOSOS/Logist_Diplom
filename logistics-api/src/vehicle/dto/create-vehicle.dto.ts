@@ -6,7 +6,9 @@ import {
   IsNumber,
   Min,
   IsUUID,
+  IsEnum,
 } from 'class-validator';
+import { VehicleStatus } from '../entities/vehicle.entity';
 
 export class CreateVehicleDto {
   @IsString()
@@ -32,4 +34,8 @@ export class CreateVehicleDto {
   @IsUUID()
   @IsNotEmpty()
   typeId: string; // ID of the VehicleType
+
+  @IsOptional()
+  @IsEnum(VehicleStatus)
+  status?: VehicleStatus;
 }

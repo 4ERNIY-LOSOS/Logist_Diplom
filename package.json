@@ -1,6 +1,18 @@
 {
-  "dependencies": {
-    "class-transformer": "^0.5.1",
-    "class-validator": "^0.14.3"
+  "name": "axis-logistics-root",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "install:all": "npm install && npm --prefix logistics-api install && npm --prefix client install --legacy-peer-deps",
+    "db:up": "docker compose up -d postgres",
+    "db:setup": "npm --prefix logistics-api run db:setup",
+    "db:reset": "npm --prefix logistics-api run db:reset",
+    "api:dev": "npm --prefix logistics-api run start:dev",
+    "client:dev": "npm --prefix client run dev",
+    "dev": "concurrently \"npm run api:dev\" \"npm run client:dev\"",
+    "build:all": "npm --prefix logistics-api run build && npm --prefix client run build"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
   }
 }

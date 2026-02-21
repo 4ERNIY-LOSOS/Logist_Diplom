@@ -4,7 +4,7 @@ import {
   ConflictException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Not } from 'typeorm';
+import { Repository, Not, FindOptionsWhere } from 'typeorm';
 import { CreateDriverDto } from './dto/create-driver.dto';
 import { UpdateDriverDto } from './dto/update-driver.dto';
 import { Driver, DriverStatus } from './entities/driver.entity';
@@ -39,7 +39,7 @@ export class DriverService {
     const { isAvailable, status, page = 1, limit = 10 } = options;
     const skip = (page - 1) * limit;
 
-    const where: any = {};
+    const where: FindOptionsWhere<Driver> = {};
     if (isAvailable !== undefined) {
       where.isAvailable = isAvailable;
     }

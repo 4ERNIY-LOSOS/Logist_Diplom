@@ -16,6 +16,7 @@ import { ConfigService } from '@nestjs/config';
 import { UserService } from '../user/user.service';
 import { RoleName } from '../auth/enums/role-name.enum';
 import { Shipment } from '../shipment/entities/shipment.entity'; // Import Shipment
+import { RequestUser } from '../auth/interfaces/request-user.interface';
 
 @Injectable()
 export class DocumentService {
@@ -62,7 +63,7 @@ export class DocumentService {
     }
   }
 
-  async findOne(id: string, reqUser: any): Promise<Document> {
+  async findOne(id: string, reqUser: RequestUser): Promise<Document> {
     const user = await this.userService.findOne(reqUser.userId);
     const document = await this.documentRepository.findOne({
       where: { id },
@@ -98,7 +99,7 @@ export class DocumentService {
     return path.join(this.uploadDir, document.fileName);
   }
 
-  async delete(id: string, reqUser: any): Promise<void> {
+  async delete(id: string, reqUser: RequestUser): Promise<void> {
     // findOne will perform the authorization check
     const document = await this.findOne(id, reqUser);
     const filePath = path.join(this.uploadDir, document.fileName);
@@ -117,7 +118,7 @@ export class DocumentService {
 
   async findByShipmentId(
     shipmentId: string,
-    reqUser: any,
+    reqUser: RequestUser,
   ): Promise<Document[]> {
     const user = await this.userService.findOne(reqUser.userId);
 

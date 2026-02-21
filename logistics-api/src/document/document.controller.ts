@@ -10,7 +10,6 @@ import {
   Res,
   UseGuards,
   Body,
-  Req,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { DocumentService } from './document.service';
@@ -20,7 +19,8 @@ import { AuthGuard } from '@nestjs/passport';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { RoleName } from '../auth/enums/role-name.enum';
-import { Shipment } from '../shipment/entities/shipment.entity'; // For type hinting
+import { GetUser } from '../auth/decorators/get-user.decorator';
+import type { RequestUser } from '../auth/interfaces/request-user.interface';
 
 @UseGuards(AuthGuard('jwt'), RolesGuard)
 @Controller('document')
@@ -54,10 +54,10 @@ export class DocumentController {
   @Roles(RoleName.CLIENT, RoleName.LOGISTICIAN, RoleName.ADMIN)
   async downloadFile(
     @Param('id') id: string,
-    @Req() req,
+    @GetUser() user: RequestUser,
     @Res() res: Response,
   ) {
-    const document = await this.documentService.findOne(id, req.user);
+    const document = await this.documentService.findOne(id, user);
     const filePath = await this.documentService.getFilePath(id);
 
     res.set({
@@ -69,8 +69,8 @@ export class DocumentController {
 
   @Delete(':id')
   @Roles(RoleName.ADMIN, RoleName.LOGISTICIAN)
-  async deleteFile(@Param('id') id: string, @Req() req) {
-    await this.documentService.delete(id, req.user);
+  async deleteFile(@Param('id') id: string, @GetUser() user: RequestUser) {
+    await this.documentService.delete(id, user);
     return { message: 'Document deleted successfully' };
   }
 
@@ -78,8 +78,8 @@ export class DocumentController {
   @Roles(RoleName.CLIENT, RoleName.LOGISTICIAN, RoleName.ADMIN)
   async getDocumentsByShipment(
     @Param('shipmentId') shipmentId: string,
-    @Req() req,
+    @GetUser() user: RequestUser,
   ) {
-    return this.documentService.findByShipmentId(shipmentId, req.user);
+    return this.documentService.findByShipmentId(shipmentId, user);
   }
 }

@@ -28,12 +28,21 @@ export class GpsSimulationService implements OnModuleInit {
     });
 
     for (const shipment of activeShipments) {
+      if (!shipment.request?.pickupAddress || !shipment.request?.deliveryAddress) {
+        continue;
+      }
+
+      if (shipment.request.pickupAddress.latitude === null || shipment.request.pickupAddress.longitude === null ||
+          shipment.request.deliveryAddress.latitude === null || shipment.request.deliveryAddress.longitude === null) {
+          continue;
+      }
+
       const startLat = Number(shipment.request.pickupAddress.latitude);
       const startLng = Number(shipment.request.pickupAddress.longitude);
       const endLat = Number(shipment.request.deliveryAddress.latitude);
       const endLng = Number(shipment.request.deliveryAddress.longitude);
 
-      if (!startLat || !startLng || !endLat || !endLng) continue;
+      if (isNaN(startLat) || isNaN(startLng) || isNaN(endLat) || isNaN(endLng)) continue;
 
       // Find latest log
       const latestLog = await this.gpsLogRepository.findOne({

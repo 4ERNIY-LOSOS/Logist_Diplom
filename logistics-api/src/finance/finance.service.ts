@@ -43,4 +43,11 @@ export class FinanceService {
   async findAll() {
     return this.invoiceRepository.find({ relations: ['company', 'shipment'] });
   }
+
+  async findByCompany(companyId: string) {
+    return this.invoiceRepository.find({
+      where: { company: { id: companyId } },
+      relations: ['shipment'],
+    });
+  }
 }
