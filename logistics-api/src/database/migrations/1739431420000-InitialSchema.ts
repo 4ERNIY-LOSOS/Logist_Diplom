@@ -12,6 +12,7 @@ export class InitialSchema1739431420000 implements MigrationInterface {
         await queryRunner.query(`CREATE TYPE "ltl_shipments_status_enum" AS ENUM('Формируется', 'В пути', 'Завершен', 'Отменен')`);
         await queryRunner.query(`CREATE TYPE "vehicle_maintenance_type_enum" AS ENUM('ROUTINE', 'REPAIR', 'INSPECTION')`);
         await queryRunner.query(`CREATE TYPE "invoices_status_enum" AS ENUM('DRAFT', 'SENT', 'PAID', 'OVERDUE', 'CANCELLED')`);
+        await queryRunner.query(`CREATE TYPE "shipment_milestones_type_enum" AS ENUM('ARRIVED_AT_PICKUP', 'LOADING_STARTED', 'LOADING_COMPLETED', 'DEPARTED_FROM_PICKUP', 'IN_TRANSIT', 'ARRIVED_AT_DELIVERY', 'UNLOADING_STARTED', 'UNLOADING_COMPLETED', 'POD_UPLOADED', 'DELIVERED')`);
 
         // Roles
         await queryRunner.query(`CREATE TABLE "roles" ("id" uuid NOT NULL DEFAULT uuid_generate_v4(), "name" character varying(50) NOT NULL, "description" character varying, CONSTRAINT "UQ_roles_name" UNIQUE ("name"), CONSTRAINT "PK_roles" PRIMARY KEY ("id"))`);
@@ -67,7 +68,7 @@ export class InitialSchema1739431420000 implements MigrationInterface {
         await queryRunner.query(`CREATE TABLE "shipment_route_stops" ("id" uuid NOT NULL DEFAULT uuid_generate_v4(), "stop_order" integer NOT NULL, "planned_arrival" TIMESTAMP WITH TIME ZONE NOT NULL, "actual_arrival" TIMESTAMP WITH TIME ZONE, "ltl_shipment_id" uuid, "address_id" uuid, CONSTRAINT "PK_shipment_route_stops" PRIMARY KEY ("id"))`);
 
         // Shipment Milestones
-        await queryRunner.query(`CREATE TABLE "shipment_milestones" ("id" uuid NOT NULL DEFAULT uuid_generate_v4(), "name" character varying NOT NULL, "description" character varying, "timestamp" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(), "location_lat" numeric(10,8), "location_lng" numeric(11,8), "shipment_id" uuid, CONSTRAINT "PK_shipment_milestones" PRIMARY KEY ("id"))`);
+        await queryRunner.query(`CREATE TABLE "shipment_milestones" ("id" uuid NOT NULL DEFAULT uuid_generate_v4(), "type" "shipment_milestones_type_enum" NOT NULL, "location" character varying, "latitude" numeric(10,8), "longitude" numeric(11,8), "notes" character varying, "timestamp" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(), "created_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(), "shipment_id" uuid, CONSTRAINT "PK_shipment_milestones" PRIMARY KEY ("id"))`);
 
         // Documents
         await queryRunner.query(`CREATE TABLE "documents" ("id" uuid NOT NULL DEFAULT uuid_generate_v4(), "file_name" character varying NOT NULL, "original_name" character varying NOT NULL, "mime_type" character varying NOT NULL, "size" integer NOT NULL, "type" "documents_type_enum" NOT NULL DEFAULT 'OTHER', "uploaded_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(), "shipment_id" uuid NOT NULL, CONSTRAINT "PK_documents" PRIMARY KEY ("id"))`);

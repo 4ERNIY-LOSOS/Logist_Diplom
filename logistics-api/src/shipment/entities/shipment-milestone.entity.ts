@@ -35,6 +35,7 @@ export class ShipmentMilestone {
   @Column({
     type: 'enum',
     enum: MilestoneType,
+    enumName: 'shipment_milestones_type_enum',
   })
   type: MilestoneType;
 
