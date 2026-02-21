@@ -81,6 +81,16 @@ export interface RequestStatus {
   description?: string;
 }
 
+export interface ShipmentMilestone {
+  id: string;
+  type: string;
+  timestamp: string;
+  location?: string;
+  latitude?: number;
+  longitude?: number;
+  notes?: string;
+}
+
 export interface LogisticRequest {
   id: string;
   pickupDate: string;
@@ -95,6 +105,7 @@ export interface LogisticRequest {
   cargos: Cargo[];
   company: Company;
   createdByUser: User;
+  shipment?: Shipment;
   createdAt: string;
   updatedAt: string;
 }
@@ -142,6 +153,7 @@ export interface Shipment {
   driver: Driver;
   vehicle: Vehicle;
   status: ShipmentStatus;
+  milestones: ShipmentMilestone[];
   ltlShipment?: LtlShipment;
   createdAt: string;
   updatedAt: string;

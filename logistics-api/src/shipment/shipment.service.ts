@@ -329,9 +329,11 @@ export class ShipmentService {
         'request.deliveryAddress',
         'driver',
         'vehicle',
-        'status'
+        'status',
+        'milestones',
       ],
       where: {},
+      order: { createdAt: 'DESC' as const },
     };
 
     if (user.role.name === RoleName.CLIENT) {
@@ -356,7 +358,8 @@ export class ShipmentService {
         'request.cargos',
         'driver',
         'vehicle',
-        'status'
+        'status',
+        'milestones',
       ],
     });
 

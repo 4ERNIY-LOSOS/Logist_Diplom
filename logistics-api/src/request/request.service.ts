@@ -135,32 +135,34 @@ export class RequestService {
 
   async findAll(reqUser: RequestUser): Promise<Request[]> {
     const user = await this.userService.findOne(reqUser.userId);
+    const relations = [
+      'status',
+      'company',
+      'cargos',
+      'pickupAddress',
+      'deliveryAddress',
+      'shipment',
+      'shipment.status',
+      'shipment.driver',
+      'shipment.vehicle',
+      'shipment.milestones',
+    ];
+
     if (user.role.name === RoleName.CLIENT) {
       if (!user.company) {
         return []; // A client without a company has no requests
       }
       return this.requestRepository.find({
         where: { company: { id: user.company.id } },
-        relations: [
-          'status',
-          'company',
-          'cargos',
-          'pickupAddress',
-          'deliveryAddress',
-        ],
+        relations,
+        order: { createdAt: 'DESC' },
       });
     }
 
     // Admins and Logisticians can see all requests
     return this.requestRepository.find({
-      relations: [
-        'status',
-        'company',
-        'cargos',
-        'pickupAddress',
-        'deliveryAddress',
-        'createdByUser',
-      ],
+      relations: [...relations, 'createdByUser'],
+      order: { createdAt: 'DESC' },
     });
   }
 
@@ -175,6 +177,11 @@ export class RequestService {
         'pickupAddress',
         'deliveryAddress',
         'createdByUser',
+        'shipment',
+        'shipment.status',
+        'shipment.driver',
+        'shipment.vehicle',
+        'shipment.milestones',
       ],
     });
 
