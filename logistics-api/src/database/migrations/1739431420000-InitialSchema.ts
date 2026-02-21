@@ -159,5 +159,6 @@ export class InitialSchema1739431420000 implements MigrationInterface {
         await queryRunner.query(`DROP TYPE "documents_type_enum"`);
         await queryRunner.query(`DROP TYPE "drivers_status_enum"`);
         await queryRunner.query(`DROP TYPE "vehicles_status_enum"`);
+        await queryRunner.query(`DROP TYPE "shipment_milestones_type_enum"`);
     }
 }
