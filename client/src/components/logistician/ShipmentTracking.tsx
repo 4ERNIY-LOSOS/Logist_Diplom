@@ -44,6 +44,7 @@ const ShipmentTracking: React.FC = () => {
   const [shipmentPositions, setShipmentPositions] = useState<Record<string, [number, number]>>({});
   const [selectedShipmentId, setSelectedShipmentId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [mapKey, setMapKey] = useState(() => `map-${Math.random().toString(36).substring(2, 9)}`);
 
   useEffect(() => {
     const fetchShipments = async () => {
@@ -103,7 +104,12 @@ const ShipmentTracking: React.FC = () => {
       <Typography variant="h5" fontWeight="bold" gutterBottom>Глобальный мониторинг флота</Typography>
 
       <Box sx={{ height: '500px', width: '100%', mb: 4, borderRadius: 2, overflow: 'hidden', border: '1px solid', borderColor: 'divider' }}>
-          <MapContainerAny key="logistician-global-map" center={russiaCenter} zoom={3} style={{ height: '100%', width: '100%' }}>
+          <MapContainerAny
+            key={mapKey}
+            center={russiaCenter}
+            zoom={3}
+            style={{ height: '100%', width: '100%' }}
+          >
             <TileLayerAny url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors' />
             {shipments.map(s => shipmentPositions[s.id] && (
                 <MarkerAny key={s.id} position={shipmentPositions[s.id]}>

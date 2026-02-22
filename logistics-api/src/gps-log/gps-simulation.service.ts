@@ -24,11 +24,11 @@ export class GpsSimulationService implements OnModuleInit {
   async simulateMovement() {
     const activeShipments = await this.shipmentRepository.find({
       where: { status: { name: 'В пути' } },
-      relations: ['request', 'request.pickupAddress', 'request.deliveryAddress', 'gpsLogs'],
+      relations: ['request', 'request.pickupAddress', 'request.deliveryAddress', 'driver', 'gpsLogs'],
     });
 
     for (const shipment of activeShipments) {
-      if (!shipment.request?.pickupAddress || !shipment.request?.deliveryAddress) {
+      if (!shipment.request?.pickupAddress || !shipment.request?.deliveryAddress || !shipment.driver) {
         continue;
       }
 
@@ -68,7 +68,8 @@ export class GpsSimulationService implements OnModuleInit {
           longitude: newLng,
           timestamp: new Date(),
         });
-        this.logger.debug(`Updated GPS for Shipment ${shipment.id}: ${newLat}, ${newLng}`);
+        const driverName = `${shipment.driver.firstName} ${shipment.driver.lastName}`;
+        this.logger.debug(`[Simulation] Shipment ${shipment.id.substring(0, 8)} (Driver: ${driverName}): ${newLat.toFixed(4)}, ${newLng.toFixed(4)}`);
       }
     }
   }
