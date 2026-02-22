@@ -1,6 +1,6 @@
 import { Injectable, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Between, LessThanOrEqual, MoreThanOrEqual, EntityManager } from 'typeorm';
+import { Repository, Between, LessThanOrEqual, MoreThanOrEqual, EntityManager, Brackets } from 'typeorm';
 import { Shipment } from '../shipment/entities/shipment.entity';
 import { VehicleMaintenance } from '../vehicle/entities/vehicle-maintenance.entity';
 
@@ -18,23 +18,19 @@ export class SchedulingService {
     const maintenanceRepo = manager ? manager.getRepository(VehicleMaintenance) : this.maintenanceRepository;
 
     // 1. Check for overlapping shipments
-    const overlappingShipment = await shipmentRepo.findOne({
-      where: [
-        {
-          vehicle: { id: vehicleId },
-          plannedPickupDate: Between(start, end),
-        },
-        {
-          vehicle: { id: vehicleId },
-          plannedDeliveryDate: Between(start, end),
-        },
-        {
-          vehicle: { id: vehicleId },
-          plannedPickupDate: LessThanOrEqual(start),
-          plannedDeliveryDate: MoreThanOrEqual(end),
-        }
-      ]
-    });
+    // We ignore shipments with status 'Отменена'
+    const overlappingShipment = await shipmentRepo.createQueryBuilder('shipment')
+      .leftJoinAndSelect('shipment.status', 'status')
+      .where('shipment.vehicle_id = :vehicleId', { vehicleId })
+      .andWhere('status.name != :cancelledStatus', { cancelledStatus: 'Отменена' })
+      .andWhere(
+        new Brackets((qb) => {
+          qb.where('shipment.planned_pickup_date BETWEEN :start AND :end', { start, end })
+            .orWhere('shipment.planned_delivery_date BETWEEN :start AND :end', { start, end })
+            .orWhere('(shipment.planned_pickup_date <= :start AND shipment.planned_delivery_date >= :end)', { start, end });
+        }),
+      )
+      .getOne();
 
     if (overlappingShipment) {
       throw new BadRequestException(`Vehicle has an overlapping shipment (${overlappingShipment.id})`);
@@ -65,18 +61,18 @@ export class SchedulingService {
   async checkDriverAvailability(driverId: string, start: Date, end: Date, manager?: EntityManager): Promise<boolean> {
     const shipmentRepo = manager ? manager.getRepository(Shipment) : this.shipmentRepository;
 
-    const overlappingShipment = await shipmentRepo.findOne({
-      where: [
-        {
-          driver: { id: driverId },
-          plannedPickupDate: Between(start, end),
-        },
-        {
-          driver: { id: driverId },
-          plannedDeliveryDate: Between(start, end),
-        }
-      ]
-    });
+    const overlappingShipment = await shipmentRepo.createQueryBuilder('shipment')
+      .leftJoinAndSelect('shipment.status', 'status')
+      .where('shipment.driver_id = :driverId', { driverId })
+      .andWhere('status.name != :cancelledStatus', { cancelledStatus: 'Отменена' })
+      .andWhere(
+        new Brackets((qb) => {
+          qb.where('shipment.planned_pickup_date BETWEEN :start AND :end', { start, end })
+            .orWhere('shipment.planned_delivery_date BETWEEN :start AND :end', { start, end })
+            .orWhere('(shipment.planned_pickup_date <= :start AND shipment.planned_delivery_date >= :end)', { start, end });
+        }),
+      )
+      .getOne();
 
     if (overlappingShipment) {
       throw new BadRequestException(`Driver has an overlapping shipment (${overlappingShipment.id})`);
