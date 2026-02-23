@@ -15,5 +15,5 @@ export class Role {
 
   @Exclude()
   @OneToMany('User', 'role')
-  users: any[];
+  users: User[];
 }

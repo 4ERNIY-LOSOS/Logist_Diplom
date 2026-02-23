@@ -6,6 +6,7 @@ import {
   ManyToOne,
   JoinColumn,
 } from 'typeorm';
+import { Exclude } from 'class-transformer';
 import { Request } from '../../request/entities/request.entity';
 import { Shipment } from '../../shipment/entities/shipment.entity';
 
@@ -37,6 +38,7 @@ export class Document {
   @Column({
     type: 'enum',
     enum: DocumentType,
+    enumName: 'documents_type_enum',
     default: DocumentType.OTHER,
   })
   type: DocumentType;
@@ -44,6 +46,7 @@ export class Document {
   @CreateDateColumn({ type: 'timestamptz', name: 'uploaded_at' })
   uploadedAt: Date;
 
+  @Exclude()
   @ManyToOne(() => Shipment, (shipment) => shipment.documents, {
     nullable: false,
     onDelete: 'CASCADE',

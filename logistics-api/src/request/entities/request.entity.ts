@@ -12,12 +12,14 @@ import {
   Index,
   Check,
 } from 'typeorm';
+import { Exclude } from 'class-transformer';
 import { User } from '../../user/entities/user.entity';
 import { Company } from '../../company/entities/company.entity';
 import { Address } from '../../address/entities/address.entity';
 import { Cargo } from '../../cargo/entities/cargo.entity';
 import { RequestStatus } from './request-status.entity';
 import { Shipment } from '../../shipment/entities/shipment.entity';
+import { NumericTransformer } from '../../common/transformers/numeric.transformer';
 
 @Entity('requests')
 @Check(`"pickup_date" <= "delivery_date"`)
@@ -57,6 +59,7 @@ export class Request {
   })
   cargos: Cargo[];
 
+  @Exclude()
   @OneToOne(() => Shipment, (shipment) => shipment.request)
   shipment: Shipment;
 
@@ -71,6 +74,7 @@ export class Request {
     scale: 2,
     name: 'distance_km',
     default: 0,
+    transformer: new NumericTransformer(),
   })
   distanceKm: number;
 
@@ -79,6 +83,7 @@ export class Request {
     scale: 2,
     name: 'preliminary_cost',
     nullable: true,
+    transformer: new NumericTransformer(),
   })
   preliminaryCost: number;
 
@@ -87,6 +92,7 @@ export class Request {
     scale: 2,
     name: 'final_cost',
     nullable: true,
+    transformer: new NumericTransformer(),
   })
   finalCost: number;
 

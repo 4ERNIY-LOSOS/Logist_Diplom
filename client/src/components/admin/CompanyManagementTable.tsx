@@ -21,23 +21,15 @@ import {
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import AddIcon from '@mui/icons-material/Add';
-import api from '../../api/api';
-
-interface Company {
-  id: string;
-  name: string;
-  taxId: string;
-  email: string;
-  phone?: string;
-  address?: string;
-}
+import { companyService } from '../../services/admin.service';
+import type { Company } from '../../types';
 
 export const CompanyManagementTable: React.FC = () => {
   const [companies, setCompanies] = useState<Company[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [openDialog, setOpenDialog] = useState(false);
-  const [currentCompany, setCurrentCompany] = useState<Company | null>(null);
+  const [currentCompany, setCurrentCompany] = useState<Partial<Company> | null>(null);
   const [isNewCompany, setIsNewCompany] = useState(false);
 
   useEffect(() => {
@@ -47,8 +39,8 @@ export const CompanyManagementTable: React.FC = () => {
   const fetchCompanies = async () => {
     setLoading(true);
     try {
-      const response = await api.get<Company[]>('/company');
-      setCompanies(response.data);
+      const data = await companyService.getAll();
+      setCompanies(data);
     } catch (err) {
       setError('Failed to fetch companies.');
       console.error(err);
@@ -58,7 +50,7 @@ export const CompanyManagementTable: React.FC = () => {
   };
 
   const handleAddClick = () => {
-    setCurrentCompany({ id: '', name: '', taxId: '', email: '' });
+    setCurrentCompany({ id: '', name: '', taxId: '', email: '', isActive: true });
     setIsNewCompany(true);
     setOpenDialog(true);
   };
@@ -79,9 +71,9 @@ export const CompanyManagementTable: React.FC = () => {
     if (!currentCompany) return;
     try {
       if (isNewCompany) {
-        await api.post('/company', currentCompany);
-      } else {
-        await api.patch(`/company/${currentCompany.id}`, currentCompany);
+        await companyService.create(currentCompany);
+      } else if (currentCompany.id) {
+        await companyService.update(currentCompany.id, currentCompany);
       }
       handleDialogClose();
       fetchCompanies();
@@ -94,7 +86,7 @@ export const CompanyManagementTable: React.FC = () => {
   const handleDeleteCompany = async (companyId: string) => {
     if (window.confirm('Вы уверены, что хотите удалить эту компанию?')) {
       try {
-        await api.delete(`/company/${companyId}`);
+        await companyService.delete(companyId);
         fetchCompanies();
       } catch (err) {
         setError('Failed to delete company.');

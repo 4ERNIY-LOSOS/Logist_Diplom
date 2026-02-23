@@ -14,6 +14,6 @@ export class ShipmentStatus {
   description: string;
 
   @Exclude()
-  @OneToMany(() => Shipment, (shipment) => shipment.status)
+  @OneToMany('Shipment', 'status')
   shipments: Shipment[];
 }

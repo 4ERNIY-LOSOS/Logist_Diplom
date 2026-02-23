@@ -10,6 +10,7 @@ import {
 } from 'typeorm';
 import { Shipment } from '../../shipment/entities/shipment.entity';
 import { Company } from '../../company/entities/company.entity';
+import { NumericTransformer } from '../../common/transformers/numeric.transformer';
 
 export enum InvoiceStatus {
   DRAFT = 'DRAFT',
@@ -35,15 +36,16 @@ export class Invoice {
   @JoinColumn({ name: 'company_id' })
   company: Company;
 
-  @Column('decimal', { precision: 12, scale: 2 })
+  @Column('decimal', { precision: 12, scale: 2, transformer: new NumericTransformer() })
   amount: number;
 
-  @Column('decimal', { name: 'tax_amount', precision: 12, scale: 2, default: 0 })
+  @Column('decimal', { name: 'tax_amount', precision: 12, scale: 2, default: 0, transformer: new NumericTransformer() })
   taxAmount: number;
 
   @Column({
     type: 'enum',
     enum: InvoiceStatus,
+    enumName: 'invoices_status_enum',
     default: InvoiceStatus.DRAFT,
   })
   status: InvoiceStatus;

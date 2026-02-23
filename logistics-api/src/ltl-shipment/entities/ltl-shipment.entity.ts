@@ -21,6 +21,7 @@ export class LtlShipment {
   @Column({
     type: 'enum',
     enum: LtlShipmentStatus,
+    enumName: 'ltl_shipments_status_enum',
     default: LtlShipmentStatus.CONSOLIDATING,
   })
   status: LtlShipmentStatus;

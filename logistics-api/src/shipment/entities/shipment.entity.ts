@@ -12,6 +12,7 @@ import {
   Index,
   Check,
 } from 'typeorm';
+import { Exclude } from 'class-transformer';
 import { Request } from '../../request/entities/request.entity';
 import { Driver } from '../../driver/entities/driver.entity';
 import { Vehicle } from '../../vehicle/entities/vehicle.entity';
@@ -33,35 +34,38 @@ export class Shipment {
   @JoinColumn({ name: 'request_id' })
   request: Request;
 
-  @ManyToOne(() => Driver, (driver) => driver.shipments)
+  @ManyToOne(() => Driver, (driver) => driver.shipments, { onDelete: 'RESTRICT' })
   @JoinColumn({ name: 'driver_id' })
   driver: Driver;
 
-  @ManyToOne(() => Vehicle, (vehicle) => vehicle.shipments)
+  @ManyToOne(() => Vehicle, (vehicle) => vehicle.shipments, { onDelete: 'RESTRICT' })
   @JoinColumn({ name: 'vehicle_id' })
   vehicle: Vehicle;
 
   @Index()
-  @ManyToOne(() => ShipmentStatus, (status) => status.shipments)
+  @ManyToOne(() => ShipmentStatus, (status) => status.shipments, { onDelete: 'RESTRICT' })
   @JoinColumn({ name: 'status_id' })
   status: ShipmentStatus;
 
   // For LTL shipments
+  @Exclude()
   @ManyToOne('LtlShipment', 'shipments', {
     nullable: true,
     onDelete: 'SET NULL',
   })
   @JoinColumn({ name: 'ltl_shipment_id' })
-  ltlShipment: any | null;
+  ltlShipment: LtlShipment | null;
 
+  @Exclude()
   @OneToMany('Document', 'shipment')
-  documents: any[];
+  documents: Document[];
 
+  @Exclude()
   @OneToMany('GpsLog', 'shipment')
-  gpsLogs: any[];
+  gpsLogs: GpsLog[];
 
   @OneToMany('ShipmentMilestone', 'shipment')
-  milestones: any[];
+  milestones: ShipmentMilestone[];
 
   @Index()
   @Column({ type: 'timestamptz', name: 'planned_pickup_date' })

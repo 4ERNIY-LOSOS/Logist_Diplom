@@ -1,36 +1,40 @@
 import React, { useState } from 'react';
-import CreateRequestForm from './CreateRequestForm';
+import { Box, Typography, Button, Paper } from '@mui/material';
 import ClientRequestsTable from './ClientRequestsTable';
-import { Box, Button, Collapse, Typography } from '@mui/material';
-import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
+import CreateRequestForm from './CreateRequestForm';
+import AddIcon from '@mui/icons-material/Add';
 
 const ClientDashboard: React.FC = () => {
   const [showForm, setShowForm] = useState(false);
 
-  const handleSuccess = () => {
-    // Potentially refresh the table or show a global notification
-    setShowForm(false);
-  };
-
   return (
     <Box>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-        <Typography variant="h4">Панель управления клиента</Typography>
-        <Button
-          variant="contained"
-          startIcon={<AddCircleOutlineIcon />}
-          onClick={() => setShowForm(!showForm)}
-        >
-          {showForm ? 'Отмена' : 'Новая заявка'}
-        </Button>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
+        <Typography variant="h4" fontWeight="bold">
+          Мои заявки
+        </Typography>
+        {!showForm && (
+          <Button
+            variant="contained"
+            startIcon={<AddIcon />}
+            onClick={() => setShowForm(true)}
+            sx={{ px: 3, py: 1 }}
+          >
+            Создать заявку
+          </Button>
+        )}
       </Box>
-      
-      <Collapse in={showForm}>
-        {/* Pass a success handler to the form to close it on success */}
-        <CreateRequestForm onSuccess={handleSuccess} />
-      </Collapse>
 
-      <ClientRequestsTable />
+      {showForm ? (
+        <Paper sx={{ p: 4, borderRadius: 2 }}>
+          <CreateRequestForm
+            onSuccess={() => setShowForm(false)}
+            onCancel={() => setShowForm(false)}
+          />
+        </Paper>
+      ) : (
+        <ClientRequestsTable />
+      )}
     </Box>
   );
 };

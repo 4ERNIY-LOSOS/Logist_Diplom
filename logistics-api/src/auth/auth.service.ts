@@ -16,8 +16,8 @@ export class AuthService {
     private emailService: EmailService,
   ) {}
 
-  async validateUser(username: string, pass: string): Promise<any> {
-    const user = await this.userService.findOneByUsername(username);
+  async validateUser(identifier: string, pass: string): Promise<any> {
+    const user = await this.userService.findOneByUsernameOrEmail(identifier);
     if (user && (await bcrypt.compare(pass, user.password))) {
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const { password, ...result } = user;
@@ -30,7 +30,8 @@ export class AuthService {
     const payload = {
       username: user.username,
       sub: user.id,
-      role: user.role.name, // Use role name from the nested object
+      role: user.role.name,
+      companyId: user.company?.id,
     };
     return {
       access_token: this.jwtService.sign(payload),

@@ -1,9 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import api from '../../api/api';
-import { useNavigate } from 'react-router-dom';
 import {
-  Box,
-  Typography,
   Table,
   TableBody,
   TableCell,
@@ -11,107 +7,101 @@ import {
   TableHead,
   TableRow,
   Paper,
-  Alert,
-  CircularProgress,
+  Chip,
   Button,
-  Chip
+  Typography,
+  CircularProgress,
+  Alert,
 } from '@mui/material';
+import { Link } from 'react-router-dom';
+import type { LogisticRequest } from '../../types';
+import { requestService } from '../../services/request.service';
+import { DateTime } from 'luxon';
 
-// Interfaces remain the same for now
-interface Request {
-  id: string;
-  pickupDate: string;
-  deliveryDate: string;
-  status: { name: string };
-  company: { name: string };
-  createdByUser: { username: string };
-}
+const LogisticianRequestsTable: React.FC = () => {
+  const [requests, setRequests] = useState<LogisticRequest[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-const getStatusChipColor = (statusName: string) => {
-    switch (statusName) {
-      case 'Новая': return 'primary';
-      case 'В обработке': return 'info';
+  useEffect(() => {
+    fetchRequests();
+  }, []);
+
+  const fetchRequests = async () => {
+    try {
+      const data = await requestService.getAll();
+      setRequests(data);
+    } catch (err: any) {
+      setError(err.message || 'Ошибка при загрузке заявок');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getStatusColor = (status: string): 'info' | 'warning' | 'success' | 'error' | 'default' => {
+    switch (status) {
+      case 'Новая': return 'info';
+      case 'В обработке': return 'warning';
+      case 'Завершена': return 'success';
+      case 'Отклонена': return 'error';
       default: return 'default';
     }
   };
 
-const LogisticianRequestsTable: React.FC = () => {
-  const [requests, setRequests] = useState<Request[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const navigate = useNavigate();
-
-  useEffect(() => {
-    const fetchRequests = async () => {
-      try {
-        const response = await api.get('/request');
-        const filteredRequests = response.data.filter(
-          (req: Request) => req.status?.name === 'Новая' || req.status?.name === 'В обработке'
-        );
-        setRequests(filteredRequests);
-      } catch (err: any) {
-        setError(err.response?.data?.message || 'Не удалось загрузить заявки.');
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchRequests();
-  }, []);
-
-  if (loading) {
-    return <Box sx={{ display: 'flex', justifyContent: 'center', my: 4 }}><CircularProgress /></Box>;
-  }
-
-  if (error) {
-    return <Alert severity="error">{error}</Alert>;
-  }
+  if (loading) return <CircularProgress />;
+  if (error) return <Alert severity="error">{error}</Alert>;
 
   return (
-    <Box sx={{ my: 4 }}>
-      <Typography variant="h5" gutterBottom>Заявки для обработки</Typography>
-      <TableContainer component={Paper}>
-        <Table sx={{ minWidth: 650 }} aria-label="logistician requests table">
-          <TableHead>
+    <TableContainer component={Paper} variant="outlined" sx={{ borderRadius: 2 }}>
+      <Table>
+        <TableHead sx={{ bgcolor: 'grey.50' }}>
+          <TableRow>
+            <TableCell sx={{ fontWeight: 'bold' }}>Компания</TableCell>
+            <TableCell sx={{ fontWeight: 'bold' }}>Дата создания</TableCell>
+            <TableCell sx={{ fontWeight: 'bold' }}>Маршрут</TableCell>
+            <TableCell sx={{ fontWeight: 'bold' }}>Статус</TableCell>
+            <TableCell sx={{ fontWeight: 'bold' }}>Действия</TableCell>
+          </TableRow>
+        </TableHead>
+        <TableBody>
+          {requests.length === 0 ? (
             <TableRow>
-              <TableCell>ID</TableCell>
-              <TableCell>Клиент</TableCell>
-              <TableCell>Статус</TableCell>
-              <TableCell>Дата забора</TableCell>
-              <TableCell>Дата доставки</TableCell>
-              <TableCell>Действия</TableCell>
+              <TableCell colSpan={5} align="center">Нет новых заявок для обработки</TableCell>
             </TableRow>
-          </TableHead>
-          <TableBody>
-            {requests.length === 0 ? (
-                <TableRow>
-                    <TableCell colSpan={6} align="center">Новых заявок для обработки не найдено.</TableCell>
-                </TableRow>
-            ) : (
-                requests.map((request) => (
-                  <TableRow key={request.id} hover>
-                    <TableCell title={request.id}>{request.id.substring(0, 8)}...</TableCell>
-                    <TableCell>{request.company?.name || 'N/A'}</TableCell>
-                    <TableCell>
-                        <Chip label={request.status?.name || 'N/A'} color={getStatusChipColor(request.status?.name)} size="small" />
-                    </TableCell>
-                    <TableCell>{new Date(request.pickupDate).toLocaleDateString()}</TableCell>
-                    <TableCell>{new Date(request.deliveryDate).toLocaleDateString()}</TableCell>
-                    <TableCell>
-                      <Button
-                        variant="contained"
-                        size="small"
-                        onClick={() => navigate(`/logistician/process-request/${request.id}`)}
-                      >
-                        Обработать
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))
-            )}
-          </TableBody>
-        </Table>
-      </TableContainer>
-    </Box>
+          ) : (
+            requests.map((request) => (
+              <TableRow key={request.id}>
+              <TableCell>
+                <Typography variant="body2" fontWeight="medium">{request.company.name}</Typography>
+                <Typography variant="caption" color="text.secondary">{request.createdByUser.username}</Typography>
+              </TableCell>
+              <TableCell>
+                {DateTime.fromISO(request.createdAt).toLocaleString(DateTime.DATE_MED)}
+              </TableCell>
+              <TableCell>
+                {request.pickupAddress.city} → {request.deliveryAddress.city}
+              </TableCell>
+              <TableCell>
+                <Chip label={request.status.name} color={getStatusColor(request.status.name)} size="small" />
+              </TableCell>
+              <TableCell>
+                {request.status.name === 'Новая' && (
+                  <Button
+                    component={Link}
+                    to={`/logistician/process-request/${request.id}`}
+                    variant="outlined"
+                    size="small"
+                  >
+                    Обработать
+                  </Button>
+                )}
+              </TableCell>
+              </TableRow>
+            ))
+          )}
+        </TableBody>
+      </Table>
+    </TableContainer>
   );
 };
 

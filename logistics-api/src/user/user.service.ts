@@ -84,6 +84,13 @@ export class UserService {
     return user;
   }
 
+  async findOneByUsernameOrEmail(identifier: string): Promise<User | null> {
+    return this.userRepository.findOne({
+      where: [{ username: identifier }, { email: identifier }],
+      relations: ['role', 'company'],
+    });
+  }
+
   async findOneByUsername(username: string): Promise<User | null> {
     return this.userRepository.findOne({
       where: { username },
@@ -106,11 +113,25 @@ export class UserService {
   }
 
   async updateMe(userId: string, updateUserDto: UpdateUserDto): Promise<User> {
-    if (updateUserDto.role || updateUserDto.companyId) {
+    const user = await this.findOne(userId);
+
+    // If the frontend sends the role object or name, we only block if it's DIFFERENT
+    const newRoleName = typeof updateUserDto.role === 'string'
+      ? updateUserDto.role
+      : (updateUserDto.role as any)?.name;
+
+    if (newRoleName && user.role && newRoleName !== user.role.name) {
+      throw new ForbiddenException('You are not allowed to change your role.');
+    }
+
+    const newCompanyId = updateUserDto.companyId;
+
+    if (newCompanyId && user.company && newCompanyId !== user.company.id) {
       throw new ForbiddenException(
-        'You are not allowed to change your role or company.',
+        'You are already associated with a company.',
       );
     }
+
     return this.update(userId, updateUserDto);
   }
 

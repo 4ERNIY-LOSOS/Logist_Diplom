@@ -6,15 +6,17 @@ import {
   Logger,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, In } from 'typeorm';
 import { CreateRequestDto } from './dto/create-request.dto';
 import { UpdateRequestDto } from './dto/update-request.dto';
 import { Request } from './entities/request.entity';
 import { User } from '../user/entities/user.entity';
 import { RequestStatus } from './entities/request-status.entity';
+import { CargoType } from '../cargo/entities/cargo-type.entity';
 import { RoleName } from '../auth/enums/role-name.enum';
 import { UserService } from '../user/user.service';
 import { PricingEngineService } from '../pricing/pricing-engine.service';
+import { RequestUser } from '../auth/interfaces/request-user.interface';
 
 @Injectable()
 export class RequestService {
@@ -25,13 +27,15 @@ export class RequestService {
     private requestRepository: Repository<Request>,
     @InjectRepository(RequestStatus)
     private requestStatusRepository: Repository<RequestStatus>,
+    @InjectRepository(CargoType)
+    private cargoTypeRepository: Repository<CargoType>,
     private userService: UserService,
     private pricingEngineService: PricingEngineService,
   ) {}
 
   async create(
     createRequestDto: CreateRequestDto,
-    reqUser: any,
+    reqUser: RequestUser,
   ): Promise<Request> {
     const user = await this.userService.findOne(reqUser.userId);
     const {
@@ -48,6 +52,7 @@ export class RequestService {
     const parsedPickupDate = new Date(pickupDate);
     const parsedDeliveryDate = new Date(deliveryDate);
     const now = new Date();
+    now.setHours(0, 0, 0, 0); // Allow today
 
     if (parsedPickupDate < now) {
       throw new BadRequestException(
@@ -61,11 +66,10 @@ export class RequestService {
       );
     }
 
-    // Clients can only create requests for their own company
-    if (user.role.name === RoleName.CLIENT && !user.company) {
-      // Corrected condition
+    // Only users associated with a company can create requests.
+    if (!user.company) {
       throw new ForbiddenException(
-        'Only clients associated with a company can create requests.',
+        'You must be associated with a company to create requests.',
       );
     }
 
@@ -78,11 +82,26 @@ export class RequestService {
       );
     }
 
+    // Resolve cargo types
+    const cargoTypeNames = cargos.map(c => c.type);
+    const cargoTypes = await this.cargoTypeRepository.find({
+      where: { name: In(cargoTypeNames) }
+    });
+
+    const cargosWithTypes = cargos.map(c => {
+      const type = cargoTypes.find(ct => ct.name === c.type);
+      if (!type) throw new NotFoundException(`Cargo type "${c.type}" not found`);
+      return {
+        ...c,
+        cargoType: type
+      };
+    });
+
     let preliminaryCost = 0;
     try {
       const tempRequest = this.requestRepository.create({
           distanceKm: distanceKm || 1,
-          cargos: cargos as any,
+          cargos: cargosWithTypes,
       });
       const calculation = await this.pricingEngineService.calculateRequestCost(tempRequest);
       preliminaryCost = calculation.preliminaryCost;
@@ -96,49 +115,58 @@ export class RequestService {
 
     const newRequest = this.requestRepository.create({
       ...rest,
-      pickupAddress,
-      deliveryAddress,
-      cargos,
+      pickupDate: parsedPickupDate,
+      deliveryDate: parsedDeliveryDate,
+      pickupAddress: pickupAddress as any,
+      deliveryAddress: deliveryAddress as any,
+      cargos: cargosWithTypes as any,
       createdByUser: user,
       company: user.company,
       status: initialStatus,
-      preliminaryCost: preliminaryCost, // Set calculated preliminary cost
+      preliminaryCost: preliminaryCost,
     });
 
     return this.requestRepository.save(newRequest);
   }
 
-  async findAll(reqUser: any): Promise<Request[]> {
+  async findAllStatuses(): Promise<RequestStatus[]> {
+    return this.requestStatusRepository.find();
+  }
+
+  async findAll(reqUser: RequestUser): Promise<Request[]> {
     const user = await this.userService.findOne(reqUser.userId);
+    const relations = [
+      'status',
+      'company',
+      'cargos',
+      'pickupAddress',
+      'deliveryAddress',
+      'shipment',
+      'shipment.status',
+      'shipment.driver',
+      'shipment.vehicle',
+      'shipment.milestones',
+    ];
+
     if (user.role.name === RoleName.CLIENT) {
       if (!user.company) {
         return []; // A client without a company has no requests
       }
       return this.requestRepository.find({
         where: { company: { id: user.company.id } },
-        relations: [
-          'status',
-          'company',
-          'cargos',
-          'pickupAddress',
-          'deliveryAddress',
-        ],
+        relations,
+        order: { createdAt: 'DESC' },
       });
     }
 
     // Admins and Logisticians can see all requests
     return this.requestRepository.find({
-      relations: [
-        'status',
-        'company',
-        'cargos',
-        'pickupAddress',
-        'deliveryAddress',
-      ],
+      relations: [...relations, 'createdByUser'],
+      order: { createdAt: 'DESC' },
     });
   }
 
-  async findOne(id: string, reqUser: any): Promise<Request> {
+  async findOne(id: string, reqUser: RequestUser): Promise<Request> {
     const user = await this.userService.findOne(reqUser.userId);
     const request = await this.requestRepository.findOne({
       where: { id },
@@ -149,6 +177,11 @@ export class RequestService {
         'pickupAddress',
         'deliveryAddress',
         'createdByUser',
+        'shipment',
+        'shipment.status',
+        'shipment.driver',
+        'shipment.vehicle',
+        'shipment.milestones',
       ],
     });
 
@@ -171,7 +204,7 @@ export class RequestService {
   async update(
     id: string,
     updateRequestDto: UpdateRequestDto,
-    reqUser: any,
+    reqUser: RequestUser,
   ): Promise<Request> {
     const user = await this.userService.findOne(reqUser.userId); // Get full user to check role
     // findOne will throw a NotFoundException or ForbiddenException if the user doesn't have access
@@ -192,7 +225,15 @@ export class RequestService {
 
     // More granular checks could be added here, e.g., preventing a LOGISTICIAN from changing the cost
     // For now, we trust the roles that have access to this endpoint.
-    Object.assign(request, updateRequestDto);
+    const { statusName, ...rest } = updateRequestDto as any;
+
+    if (statusName) {
+      const status = await this.requestStatusRepository.findOne({ where: { name: statusName } });
+      if (!status) throw new NotFoundException(`Status "${statusName}" not found`);
+      request.status = status;
+    }
+
+    Object.assign(request, rest);
 
     // Note: If the update includes changes to cargos or distance, recalculating preliminary cost might be needed.
     // This is a feature enhancement for later.
@@ -200,7 +241,7 @@ export class RequestService {
     return this.requestRepository.save(request);
   }
 
-  async remove(id: string, reqUser: any): Promise<void> {
+  async remove(id: string, reqUser: RequestUser): Promise<void> {
     // findOne will throw a NotFoundException or ForbiddenException if the user doesn't have access
     const request = await this.findOne(id, reqUser);
 

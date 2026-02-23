@@ -49,6 +49,20 @@ export class CompanyService {
     return user.company;
   }
 
+  async updateMyCompany(
+    userId: string,
+    updateCompanyDto: UpdateCompanyDto,
+  ): Promise<Company> {
+    const user = await this.userService.findOne(userId);
+    if (!user.company) {
+      throw new NotFoundException(
+        `User with ID "${userId}" is not associated with any company.`,
+      );
+    }
+    Object.assign(user.company, updateCompanyDto);
+    return this.companyRepository.save(user.company);
+  }
+
   async update(
     id: string,
     updateCompanyDto: UpdateCompanyDto,

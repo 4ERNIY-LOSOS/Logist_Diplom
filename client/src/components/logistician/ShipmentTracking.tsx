@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { shipmentService } from '../../services/shipment.service';
 import api from '../../api/api';
 import {
   Box,
@@ -11,22 +12,22 @@ import {
   TableHead,
   TableRow,
   Button,
-  Dialog,
-  DialogTitle,
-  DialogContent,
   CircularProgress,
 } from '@mui/material';
-import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
-import L from 'leaflet';
+import LocationSearchingIcon from '@mui/icons-material/LocationSearching';
+import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 
-// Fix for default Leaflet icon not showing up
-delete (L.Icon.Default.prototype as any)._getIconUrl;
-L.Icon.Default.mergeOptions({
-  iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
-  iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
-  shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
-});
+// Leaflet icons are now globally setup in utils/leaflet-setup.ts
+
+// Helper to center map
+const RecenterMap = ({ coords }: { coords: [number, number] }) => {
+  const map = useMap();
+  useEffect(() => {
+    map.setView(coords, 10);
+  }, [coords, map]);
+  return null;
+};
 
 interface Shipment {
   id: string;
@@ -40,15 +41,16 @@ interface Shipment {
 
 const ShipmentTracking: React.FC = () => {
   const [shipments, setShipments] = useState<Shipment[]>([]);
+  const [shipmentPositions, setShipmentPositions] = useState<Record<string, [number, number]>>({});
   const [selectedShipmentId, setSelectedShipmentId] = useState<string | null>(null);
-  const [currentCoords, setCurrentCoords] = useState<[number, number] | null>(null);
   const [loading, setLoading] = useState(true);
+  const [mapKey, setMapKey] = useState(() => `map-${Date.now()}`);
 
   useEffect(() => {
     const fetchShipments = async () => {
       try {
-        const res = await api.get('/shipment');
-        setShipments(res.data.filter((s: any) => s.status.name === 'В пути'));
+        const data = await shipmentService.getAll();
+        setShipments(data.filter((s) => s.status.name === 'В пути'));
       } catch (err) {
         console.error(err);
       } finally {
@@ -59,34 +61,78 @@ const ShipmentTracking: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    let interval: any;
-    if (selectedShipmentId) {
-      const fetchCoords = async () => {
-        try {
-          const res = await api.get(`/gps-log/shipment/${selectedShipmentId}/latest`);
-          if (res.data) {
-            setCurrentCoords([Number(res.data.latitude), Number(res.data.longitude)]);
-          }
-        } catch (err) {
-          console.error('Error fetching GPS', err);
-        }
-      };
-      fetchCoords();
-      interval = setInterval(fetchCoords, 5000); // Polling every 5s
-    }
+    if (shipments.length === 0) return;
+
+    const fetchAllPositions = async () => {
+        const newPositions: Record<string, [number, number]> = {};
+        await Promise.all(shipments.map(async (s) => {
+            try {
+                const res = await api.get(`/gps-log/shipment/${s.id}/latest`);
+                if (res.data) {
+                    newPositions[s.id] = [Number(res.data.latitude), Number(res.data.longitude)];
+                }
+            } catch (err) {
+                console.error(`Error fetching GPS for ${s.id}`, err);
+            }
+        }));
+        setShipmentPositions(newPositions);
+    };
+
+    fetchAllPositions();
+    const interval = setInterval(fetchAllPositions, 10000);
     return () => clearInterval(interval);
-  }, [selectedShipmentId]);
+  }, [shipments]);
 
-  if (loading) return <CircularProgress />;
+  if (loading) return <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}><CircularProgress /></Box>;
 
+  // React 19 compatibility casts
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const MapContainerAny = MapContainer as any;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const TileLayerAny = TileLayer as any;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const MarkerAny = Marker as any;
+
+  const russiaCenter = [61.524, 105.318];
+
+  const handleTrackClick = (id: string) => {
+    setSelectedShipmentId(id);
+  };
 
   return (
     <Box>
-      <Typography variant="h6" gutterBottom>Active Shipments Tracking</Typography>
-      <TableContainer component={Paper}>
+      <Typography variant="h5" fontWeight="bold" gutterBottom>Глобальный мониторинг флота</Typography>
+
+      <Box
+        id="map-container-wrapper"
+        sx={{ height: '500px', width: '100%', mb: 4, borderRadius: 2, overflow: 'hidden', border: '1px solid', borderColor: 'divider' }}
+      >
+          <MapContainerAny
+            key={mapKey}
+            center={russiaCenter}
+            zoom={3}
+            style={{ height: '100%', width: '100%' }}
+            // Add a unique ID to the map container itself
+            id={`leaflet-map-${mapKey}`}
+          >
+            <TileLayerAny url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors' />
+            {shipments.map(s => shipmentPositions[s.id] && (
+                <MarkerAny key={s.id} position={shipmentPositions[s.id]}>
+                    <Popup>
+                        <strong>Заказ #{s.id.substring(0,8)}</strong><br/>
+                        Компания: {s.request.company.name}<br/>
+                        Статус: {s.status.name}
+                    </Popup>
+                </MarkerAny>
+            ))}
+            {selectedShipmentId && shipmentPositions[selectedShipmentId] && (
+              <RecenterMap coords={shipmentPositions[selectedShipmentId]} />
+            )}
+          </MapContainerAny>
+      </Box>
+
+      <Typography variant="h6" gutterBottom>Список активных перевозок</Typography>
+      <TableContainer component={Paper} variant="outlined">
         <Table>
           <TableHead>
             <TableRow>
@@ -101,8 +147,14 @@ const ShipmentTracking: React.FC = () => {
                 <TableCell>{s.id.substring(0, 8)}</TableCell>
                 <TableCell>{s.request.company.name}</TableCell>
                 <TableCell>
-                  <Button variant="outlined" onClick={() => setSelectedShipmentId(s.id)}>
-                    Track on Map
+                  <Button
+                    variant="outlined"
+                    startIcon={<LocationSearchingIcon />}
+                    size="small"
+                    onClick={() => handleTrackClick(s.id)}
+                    disabled={!shipmentPositions[s.id]}
+                  >
+                    Показать
                   </Button>
                 </TableCell>
               </TableRow>
@@ -114,23 +166,6 @@ const ShipmentTracking: React.FC = () => {
         </Table>
       </TableContainer>
 
-      <Dialog open={!!selectedShipmentId} onClose={() => setSelectedShipmentId(null)} fullWidth maxWidth="md">
-        <DialogTitle>Live Tracking: {selectedShipmentId?.substring(0, 8)}</DialogTitle>
-        <DialogContent sx={{ height: '500px' }}>
-          {currentCoords ? (
-            <MapContainerAny center={currentCoords} zoom={13} style={{ height: '100%', width: '100%' }}>
-              <TileLayerAny url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-              <MarkerAny position={currentCoords}>
-                <Popup>Current Location</Popup>
-              </MarkerAny>
-            </MapContainerAny>
-          ) : (
-            <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
-              <Typography>Waiting for GPS signal...</Typography>
-            </Box>
-          )}
-        </DialogContent>
-      </Dialog>
     </Box>
   );
 };

@@ -27,6 +27,11 @@ import { RoleName } from '../auth/enums/role-name.enum';
 export class VehicleController {
   constructor(private readonly vehicleService: VehicleService) {}
 
+  @Get('types')
+  findAllTypes() {
+    return this.vehicleService.findAllTypes();
+  }
+
   @Post()
   create(@Body() createVehicleDto: CreateVehicleDto) {
     return this.vehicleService.create(createVehicleDto);

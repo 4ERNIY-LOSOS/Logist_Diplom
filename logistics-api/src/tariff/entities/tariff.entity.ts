@@ -6,6 +6,7 @@ import {
   UpdateDateColumn,
   Check,
 } from 'typeorm';
+import { NumericTransformer } from '../../common/transformers/numeric.transformer';
 
 @Entity('tariffs')
 @Check(`"cost_per_km" >= 0`)
@@ -16,23 +17,23 @@ export class Tariff {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column()
+  @Column({ unique: true })
   name: string;
 
   // Cost per kilometer
-  @Column('decimal', { precision: 10, scale: 2, name: 'cost_per_km' })
+  @Column('decimal', { precision: 10, scale: 2, name: 'cost_per_km', transformer: new NumericTransformer() })
   costPerKm: number;
 
   // Cost per kilogram
-  @Column('decimal', { precision: 10, scale: 2, name: 'cost_per_kg' })
+  @Column('decimal', { precision: 10, scale: 2, name: 'cost_per_kg', transformer: new NumericTransformer() })
   costPerKg: number;
 
   // Cost per cubic meter
-  @Column('decimal', { precision: 10, scale: 2, name: 'cost_per_m3' })
+  @Column('decimal', { precision: 10, scale: 2, name: 'cost_per_m3', transformer: new NumericTransformer() })
   costPerM3: number;
 
   // Base fee for any shipment
-  @Column('decimal', { precision: 10, scale: 2, name: 'base_fee', default: 0 })
+  @Column('decimal', { precision: 10, scale: 2, name: 'base_fee', default: 0, transformer: new NumericTransformer() })
   baseFee: number;
 
   @Column({ name: 'is_active', default: true })

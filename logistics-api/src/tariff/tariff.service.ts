@@ -36,6 +36,7 @@ export class TariffService {
   async findActiveTariff(): Promise<Tariff> {
     const activeTariffs = await this.tariffRepository.find({
       where: { isActive: true },
+      order: { createdAt: 'DESC' },
     });
 
     if (activeTariffs.length === 0) {
@@ -43,12 +44,8 @@ export class TariffService {
         'No active tariff found. Please ensure one tariff is marked as active.',
       );
     }
-    if (activeTariffs.length > 1) {
-      throw new BadRequestException(
-        'Multiple active tariffs found. Please ensure only one tariff is marked as active.',
-      );
-    }
 
+    // If multiple active tariffs, just use the most recently created one
     return activeTariffs[0];
   }
 

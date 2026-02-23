@@ -24,16 +24,25 @@ export class GpsSimulationService implements OnModuleInit {
   async simulateMovement() {
     const activeShipments = await this.shipmentRepository.find({
       where: { status: { name: 'В пути' } },
-      relations: ['request', 'request.pickupAddress', 'request.deliveryAddress', 'gpsLogs'],
+      relations: ['request', 'request.pickupAddress', 'request.deliveryAddress', 'driver', 'gpsLogs'],
     });
 
     for (const shipment of activeShipments) {
+      if (!shipment.request?.pickupAddress || !shipment.request?.deliveryAddress || !shipment.driver) {
+        continue;
+      }
+
+      if (shipment.request.pickupAddress.latitude === null || shipment.request.pickupAddress.longitude === null ||
+          shipment.request.deliveryAddress.latitude === null || shipment.request.deliveryAddress.longitude === null) {
+          continue;
+      }
+
       const startLat = Number(shipment.request.pickupAddress.latitude);
       const startLng = Number(shipment.request.pickupAddress.longitude);
       const endLat = Number(shipment.request.deliveryAddress.latitude);
       const endLng = Number(shipment.request.deliveryAddress.longitude);
 
-      if (!startLat || !startLng || !endLat || !endLng) continue;
+      if (isNaN(startLat) || isNaN(startLng) || isNaN(endLat) || isNaN(endLng)) continue;
 
       // Find latest log
       const latestLog = await this.gpsLogRepository.findOne({
@@ -59,7 +68,8 @@ export class GpsSimulationService implements OnModuleInit {
           longitude: newLng,
           timestamp: new Date(),
         });
-        this.logger.debug(`Updated GPS for Shipment ${shipment.id}: ${newLat}, ${newLng}`);
+        const driverName = `${shipment.driver.firstName} ${shipment.driver.lastName}`;
+        this.logger.debug(`[Simulation] Shipment ${shipment.id.substring(0, 8)} (Driver: ${driverName}): ${newLat.toFixed(4)}, ${newLng.toFixed(4)}`);
       }
     }
   }

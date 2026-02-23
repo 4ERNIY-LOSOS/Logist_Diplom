@@ -23,15 +23,19 @@ import { ReportsModule } from './reports/reports.module';
 import { PricingModule } from './pricing/pricing.module';
 import { WarehouseModule } from './warehouse/warehouse.module';
 import { FinanceModule } from './finance/finance.module';
-import { APP_INTERCEPTOR } from '@nestjs/core';
+import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 import { AuditInterceptor } from './audit-log/audit.interceptor';
+import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
-      // Add this line
-      isGlobal: true, // Makes ConfigModule available everywhere
+      isGlobal: true,
     }),
+    ThrottlerModule.forRoot([{
+      ttl: 60000,
+      limit: 100,
+    }]),
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
       useFactory: (configService: ConfigService) => ({
@@ -42,7 +46,9 @@ import { AuditInterceptor } from './audit-log/audit.interceptor';
         password: configService.get<string>('DB_PASSWORD', 'admin'),
         database: configService.get<string>('DB_DATABASE', 'logistics_db'),
         autoLoadEntities: true,
-        synchronize: false, // ВНИМАНИЕ: Использовать только на dev-окружении!
+        synchronize: false,
+        migrations: [__dirname + '/database/migrations/*{.ts,.js}'],
+        migrationsRun: false,
       }),
       inject: [ConfigService],
     }),
@@ -73,6 +79,10 @@ import { AuditInterceptor } from './audit-log/audit.interceptor';
     {
       provide: APP_INTERCEPTOR,
       useClass: AuditInterceptor,
+    },
+    {
+      provide: APP_GUARD,
+      useClass: ThrottlerGuard,
     },
   ],
 })

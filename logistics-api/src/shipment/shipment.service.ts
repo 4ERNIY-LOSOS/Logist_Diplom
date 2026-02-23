@@ -23,6 +23,7 @@ import { VehicleStatus } from '../vehicle/entities/vehicle.entity';
 import { ShipmentMilestone, MilestoneType } from './entities/shipment-milestone.entity';
 import { SchedulingService } from '../scheduling/scheduling.service';
 import { FinanceService } from '../finance/finance.service';
+import { RequestUser } from '../auth/interfaces/request-user.interface';
 
 @Injectable()
 export class ShipmentService {
@@ -48,14 +49,14 @@ export class ShipmentService {
   async createFromRequest(
     createShipmentDto: CreateShipmentDto,
   ): Promise<Shipment> {
-    const { requestId, driverId, vehicleId, plannedPickupDate, plannedDeliveryDate, ...rest } = createShipmentDto;
-
-    // Check scheduling conflicts
-    await this.schedulingService.checkVehicleAvailability(vehicleId, new Date(plannedPickupDate), new Date(plannedDeliveryDate));
-    await this.schedulingService.checkDriverAvailability(driverId, new Date(plannedPickupDate), new Date(plannedDeliveryDate));
+    const { requestId, driverId, vehicleId, plannedPickupDate, plannedDeliveryDate, finalCost, ...rest } = createShipmentDto;
 
     return this.entityManager.transaction(
       async (transactionalEntityManager) => {
+        // Check scheduling conflicts INSIDE transaction
+        await this.schedulingService.checkVehicleAvailability(vehicleId, new Date(plannedPickupDate), new Date(plannedDeliveryDate), transactionalEntityManager);
+        await this.schedulingService.checkDriverAvailability(driverId, new Date(plannedPickupDate), new Date(plannedDeliveryDate), transactionalEntityManager);
+
         const request = await transactionalEntityManager.findOne(Request, {
           where: { id: requestId },
           relations: ['shipment', 'cargos'],
@@ -99,7 +100,7 @@ export class ShipmentService {
           );
         }
 
-        const plannedStatus = await this.shipmentStatusRepository.findOne({
+        const plannedStatus = await transactionalEntityManager.findOne(ShipmentStatus, {
           where: { name: 'Запланирована' },
         });
         if (!plannedStatus) {
@@ -108,12 +109,12 @@ export class ShipmentService {
           );
         }
 
-        const requestCompletedStatus =
-          await this.requestStatusRepository.findOne({
-            where: { name: 'Завершена' },
+        const requestProcessingStatus =
+          await transactionalEntityManager.findOne(RequestStatus, {
+            where: { name: 'В обработке' },
           });
-        if (!requestCompletedStatus) {
-          throw new NotFoundException('Request status "Завершена" not found.');
+        if (!requestProcessingStatus) {
+          throw new NotFoundException('Request status "В обработке" not found.');
         }
 
         driver.isAvailable = false;
@@ -138,11 +139,14 @@ export class ShipmentService {
         await transactionalEntityManager.save(driver);
         await transactionalEntityManager.save(vehicle);
 
-        request.status = requestCompletedStatus;
+        request.status = requestProcessingStatus;
+        request.finalCost = finalCost;
         await transactionalEntityManager.save(request);
 
         const newShipment = transactionalEntityManager.create(Shipment, {
           ...rest,
+          plannedPickupDate: new Date(plannedPickupDate),
+          plannedDeliveryDate: new Date(plannedDeliveryDate),
           request,
           driver,
           vehicle,
@@ -179,7 +183,7 @@ export class ShipmentService {
       async (transactionalEntityManager) => {
         const shipment = await transactionalEntityManager.findOne(Shipment, {
           where: { id },
-          relations: ['driver', 'vehicle', 'status', 'request'],
+          relations: ['driver', 'vehicle', 'status', 'request', 'request.company'],
         });
 
         if (!shipment) {
@@ -253,6 +257,17 @@ export class ShipmentService {
 
         // Handle specific logic for 'Delivered'
         if (newStatus.name === 'Доставлена') {
+          // Update request status to 'Завершена'
+          if (shipment.request) {
+            const completedStatus = await transactionalEntityManager.findOne(RequestStatus, {
+              where: { name: 'Завершена' },
+            });
+            if (completedStatus) {
+              shipment.request.status = completedStatus;
+              await transactionalEntityManager.save(shipment.request);
+            }
+          }
+
           // 1. Check for POD document
           const podDocument = await transactionalEntityManager.findOne(Document, {
             where: {
@@ -300,11 +315,25 @@ export class ShipmentService {
     );
   }
 
-  async findAll(reqUser: any) {
+  async findAllStatuses(): Promise<ShipmentStatus[]> {
+    return this.shipmentStatusRepository.find();
+  }
+
+  async findAll(reqUser: RequestUser) {
     const user = await this.userService.findOne(reqUser.userId);
     const findOptions = {
-      relations: ['request', 'request.company', 'driver', 'vehicle', 'status'],
+      relations: [
+        'request',
+        'request.company',
+        'request.pickupAddress',
+        'request.deliveryAddress',
+        'driver',
+        'vehicle',
+        'status',
+        'milestones',
+      ],
       where: {},
+      order: { createdAt: 'DESC' as const },
     };
 
     if (user.role.name === RoleName.CLIENT) {
@@ -317,11 +346,21 @@ export class ShipmentService {
     return this.shipmentRepository.find(findOptions);
   }
 
-  async findOne(id: string, reqUser: any) {
+  async findOne(id: string, reqUser: RequestUser) {
     const user = await this.userService.findOne(reqUser.userId);
     const shipment = await this.shipmentRepository.findOne({
       where: { id },
-      relations: ['request', 'request.company', 'driver', 'vehicle', 'status'],
+      relations: [
+        'request',
+        'request.company',
+        'request.pickupAddress',
+        'request.deliveryAddress',
+        'request.cargos',
+        'driver',
+        'vehicle',
+        'status',
+        'milestones',
+      ],
     });
 
     if (!shipment) {
